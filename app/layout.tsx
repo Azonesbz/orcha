@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
-import { Outfit, Pacifico } from "next/font/google";
+import { Bricolage_Grotesque, Spline_Sans_Mono } from "next/font/google";
 import "./globals.css";
 
-/* Les deux polices du portfolio. Outfit porte tout le texte ; Pacifico ne sert
-   qu'au nom et aux nombres des tuiles. */
-const outfit = Outfit({ subsets: ["latin"], display: "swap", variable: "--font-body" });
-const pacifico = Pacifico({
+/* Deux familles, une règle : ce qui existe sur le disque s'écrit en mono —
+   noms, chemins, comptes. La prose explique en Bricolage ; le mono atteste. */
+const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
-  weight: "400",
   display: "swap",
-  variable: "--font-display-family",
+  variable: "--font-body",
+});
+const spline = Spline_Sans_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  display: "swap",
+  variable: "--font-mono-family",
 });
 
 export const metadata: Metadata = {
@@ -28,7 +32,7 @@ export const metadata: Metadata = {
  */
 export default function Racine({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${outfit.variable} ${pacifico.variable}`}>
+    <html lang="fr" className={`${bricolage.variable} ${spline.variable}`}>
       {/* Ni hauteur ni débordement ici : l'application locale veut un chrome
           fixe, la page publique le défilement naturel du document. Chaque
           coquille pose le sien. */}

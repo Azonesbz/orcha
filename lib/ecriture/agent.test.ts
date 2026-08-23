@@ -7,7 +7,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { brancherAgent, creerAgent, debrancherAgent } from "./agent.ts";
+import { brancherAgent, creerAgent, debrancherAgent, enregistrerAgent } from "./agent.ts";
 
 function racineJetable(): string {
   const racine = mkdtempSync(join(tmpdir(), "agent-"));
@@ -220,4 +220,40 @@ test("débrancher n'emporte jamais la prose écrite sous la section", () => {
   assert.ok(contenu.includes("en parallèle"), "toute la prose, pas seulement la dernière ligne");
   assert.ok(contenu.includes("## Sous-agents"), "la section n'est pas vide : elle reste");
   assert.ok(!contenu.includes("- `relecteur`"), "seule la puce part");
+});
+
+test("réécrire le corps d'un agent laisse son frontmatter intact, ligne pour ligne", () => {
+  // Arrange
+  const racine = racineJetable();
+  const chemin = join(racine, "agents", "relecteur.md");
+  mkdirSync(join(racine, "agents"), { recursive: true });
+  writeFileSync(
+    chemin,
+    ["---", "name: relecteur", "description: Relire un diff.", "tools: Read, Grep", "---", "", "Ancien corps.", ""].join("\n"),
+    "utf8",
+  );
+
+  // Act
+  enregistrerAgent(chemin, { corps: "Nouveau corps.\n" });
+
+  // Assert
+  const contenu = readFileSync(chemin, "utf8");
+  assert.ok(contenu.includes("tools: Read, Grep"), "le frontmatter ne bouge pas");
+  assert.ok(contenu.includes("Nouveau corps."), "le corps est remplacé");
+  assert.ok(!contenu.includes("Ancien corps."), "l'ancien corps est parti");
+});
+
+test("un fichier qui n'est pas un agent est refusé avant toute écriture", () => {
+  // Arrange
+  const racine = racineJetable();
+  const chemin = join(racine, "skills", "grilling", "SKILL.md");
+  mkdirSync(join(racine, "skills", "grilling"), { recursive: true });
+  writeFileSync(chemin, ["---", "name: grilling", "---", "", "Corps.", ""].join("\n"), "utf8");
+
+  // Act
+  const geste = () => enregistrerAgent(chemin, { corps: "Autre chose." });
+
+  // Assert
+  assert.throws(geste, /agents/);
+  assert.ok(readFileSync(chemin, "utf8").includes("Corps."), "rien n'a été écrit");
 });

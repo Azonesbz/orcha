@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { Icone, Modale } from "@/components/Modale";
+import { Icone, type NomIcone } from "@/components/icones";
+import { Modale } from "@/components/Modale";
 import {
   ajouter,
   apercuRenumerotation,
@@ -42,7 +43,7 @@ export function AtelierWorkflow({
 }) {
   if (!modifiable) {
     return (
-      <p className="mt-6 rounded border border-danger/30 bg-danger-wash px-3 py-2 text-sm text-danger">
+      <p className="mb-5 rounded-lg border border-danger/30 bg-danger-wash px-3 py-2 text-corps text-danger">
         {raisonDuRefus}
       </p>
     );
@@ -74,27 +75,39 @@ function BarreOutils({
   const [ouvert, setOuvert] = useState<Outil | null>(null);
   const fermer = () => setOuvert(null);
 
-  const OUTILS: Array<{ cle: Outil; icone: Parameters<typeof Icone>[0]["nom"]; libelle: string; sourd?: boolean }> = [
-    { cle: "ajout", icone: "plus", libelle: "Ajouter une étape" },
-    { cle: "branchement", icone: "prise", libelle: "Brancher un sous-agent" },
-    { cle: "agent", icone: "agent", libelle: "Créer un sous-agent" },
-    { cle: "retrait", icone: "moins", libelle: "Retirer une étape", sourd: true },
+  /* Un seul primaire par écran : ajouter une étape. Les deux gestes de
+     branchement portent le Ciel du sous-agent ; retirer et renuméroter restent
+     fantômes — ils défont, ils ne construisent pas. */
+  const OUTILS: Array<{
+    cle: Outil;
+    icone: NomIcone;
+    libelle: string;
+    allure: "primaire" | "surface" | "fantome";
+  }> = [
+    { cle: "ajout", icone: "ajouter", libelle: "Ajouter une étape", allure: "primaire" },
+    { cle: "branchement", icone: "brancher", libelle: "Brancher un sous-agent", allure: "surface" },
+    { cle: "agent", icone: "creer-agent", libelle: "Créer un sous-agent", allure: "surface" },
+    { cle: "retrait", icone: "retirer", libelle: "Retirer une étape", allure: "fantome" },
     ...(numerotationATrou
-      ? ([{ cle: "renumerotation", icone: "numeros", libelle: "Renuméroter", sourd: true }] as const)
+      ? ([{ cle: "renumerotation", icone: "numeroter", libelle: "Renuméroter", allure: "fantome" }] as const)
       : []),
   ];
 
+  const CLASSE = { primaire: "btn-primary", surface: "btn-surface", fantome: "btn-ghost" } as const;
+
   return (
     <>
-      <div className="mt-6 flex flex-wrap gap-2">
+      <div className="mb-5 flex flex-wrap gap-2.5">
         {OUTILS.map((o) => (
           <button
             key={o.cle}
             type="button"
             onClick={() => setOuvert(o.cle)}
-            className={o.sourd ? "btn-ghost" : "btn-secondary"}
+            className={CLASSE[o.allure]}
           >
-            <Icone nom={o.icone} />
+            <span className={o.allure === "surface" ? "text-sky" : undefined}>
+              <Icone nom={o.icone} taille={15} trait={o.allure === "surface" ? 1.8 : 2} />
+            </span>
             {o.libelle}
           </button>
         ))}

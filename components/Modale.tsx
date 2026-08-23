@@ -48,7 +48,7 @@ export function Modale({
     >
       <div className="border-b border-line px-5 py-4">
         <div className="flex items-baseline justify-between gap-4">
-          <h2 className="text-base font-semibold">{titre}</h2>
+          <h2 className="text-section font-semibold">{titre}</h2>
           <button
             type="button"
             onClick={onFermer}
@@ -58,36 +58,9 @@ export function Modale({
             ✕
           </button>
         </div>
-        <p className="mt-1 text-xs text-muted">{aide}</p>
+        <p className="mt-1 text-description text-muted">{aide}</p>
       </div>
       <div className="px-5 py-4">{children}</div>
     </dialog>
-  );
-}
-
-/** Les icônes, en trait, à la taille du texte. Aucune dépendance. */
-export function Icone({ nom }: { nom: "plus" | "prise" | "agent" | "moins" | "numeros" }) {
-  const traces: Record<string, string> = {
-    plus: "M12 5v14M5 12h14",
-    prise: "M9 7V4m6 3V4M7 7h10v5a5 5 0 0 1-10 0V7Zm5 10v3",
-    agent: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 11-5.7M17 15v6m3-3h-6",
-    moins: "M5 12h14",
-    numeros: "M4 6h1v4M4 10h2M6 18H4l2-3H4M11 6h9M11 12h9M11 18h9",
-  };
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="16"
-      height="16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-      className="shrink-0"
-    >
-      <path d={traces[nom]} />
-    </svg>
   );
 }

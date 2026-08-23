@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EnteteEcran } from "@/components/EnteteEcran";
 import { Entree, Liste, Panneau, Pastille } from "@/components/primitives";
 import { lireAtelier } from "@/lib/lecture/atelier";
 import { lireWorkflow } from "@/lib/lecture/workflow";
@@ -25,11 +26,11 @@ export default function Page() {
 
   return (
     <main>
-      <h1 className="mb-1 text-2xl font-semibold">Workflows</h1>
-      <p className="mb-6 max-w-prose text-sm text-muted">
-        Les compétences qui se déroulent en étapes numérotées. Une étape déclarée dont le fichier
-        manque ne s&apos;exécutera jamais, et rien d&apos;autre ne le dit.
-      </p>
+      <EnteteEcran
+        surtitre="plans"
+        titre="Workflows"
+        intro="Les compétences qui se déroulent en étapes numérotées. Une étape déclarée dont le fichier manque ne s'exécutera jamais, et rien d'autre ne le dit."
+      />
 
       <Panneau
         titre="Workflows"
@@ -53,18 +54,18 @@ export default function Page() {
                       {competence.nom}
                     </Link>
                     <Pastille portee={competence.portee} origine={competence.origine} />
-                    <span className="font-mono text-[11px] text-muted">
+                    <span className="font-mono text-meta text-muted">
                       {workflow.etapes.length} étapes · {arrets} arrêt{arrets > 1 ? "s" : ""} dur
                       {arrets > 1 ? "s" : ""}
                     </span>
                     {manquantes > 0 && (
-                      <span className="font-mono text-[11px] text-danger">
+                      <span className="font-mono text-meta text-danger">
                         {manquantes} fichier{manquantes > 1 ? "s" : ""} manquant
                         {manquantes > 1 ? "s" : ""}
                       </span>
                     )}
                     {workflow.orphelins.length > 0 && (
-                      <span className="font-mono text-[11px] text-danger">
+                      <span className="font-mono text-meta text-danger">
                         {workflow.orphelins.length} hors séquence
                       </span>
                     )}

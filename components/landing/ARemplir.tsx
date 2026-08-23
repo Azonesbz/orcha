@@ -15,8 +15,8 @@ import type { ReactNode } from "react";
 
 export function ARemplir({ quoi, children }: { quoi: string; children: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-dashed border-line-strong bg-surface-muted p-5">
-      <p className="surtitre text-amber">À remplir — {quoi}</p>
+    <div className="rounded-2xl border border-dashed border-line-strong bg-surface p-5">
+      <p className="surtitre text-accent-soft">À remplir — {quoi}</p>
       <div className="mt-2 space-y-3 text-sm text-muted">{children}</div>
     </div>
   );
@@ -27,7 +27,7 @@ export function ChampARemplir({ intitule }: { intitule: string }) {
   return (
     <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
       <span className="text-ink-soft">{intitule}</span>
-      <span className="rounded-md border border-dashed border-line-strong px-2 py-0.5 font-mono text-xs text-amber">
+      <span className="rounded-md border border-dashed border-line-strong px-2 py-0.5 font-mono text-xs text-accent-soft">
         à remplir
       </span>
     </p>

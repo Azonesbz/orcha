@@ -11,6 +11,7 @@
 
 import { join } from "node:path";
 import { lireTexte } from "../lecture/fichiers.ts";
+import { remplacerCorps } from "./frontmatter.ts";
 import {
   cheminModifiable,
   doitEtreLibre,
@@ -53,6 +54,29 @@ function fichierAgent(nom: string, description: string, outils: string, modele: 
   if (modele.trim()) entete.push(`model: ${modele.trim()}`);
 
   return ["---", ...entete, "---", "", "**Déclencher quand** : à écrire.", "", "## Ce que tu fais", "", "À écrire.", ""].join("\n");
+}
+
+/**
+ * Réécrit le corps d'un agent existant, sans toucher au frontmatter.
+ *
+ * Le modèle et les outils autorisés vivent dans l'en-tête : les réécrire
+ * depuis la structure analysée détruirait les lignes que YAML strict refuse.
+ * L'éditeur ne propose donc que le corps, et c'est tout ce qu'on écrit.
+ */
+export function enregistrerAgent(chemin: string, modification: { corps: string }): void {
+  const absolu = verifierCheminAgent(chemin);
+  const brut = lireTexte(absolu);
+  if (brut === null) throw new EcritureRefusee("Fichier introuvable ou illisible.");
+  ecrireAtomiquement(absolu, remplacerCorps(brut, modification.corps));
+}
+
+/** Le garde partagé, plus la seule règle propre aux agents. */
+export function verifierCheminAgent(chemin: string): string {
+  const absolu = cheminModifiable(chemin);
+  if (!/\/agents\/[^/]+\.md$/.test(absolu)) {
+    throw new EcritureRefusee("Seuls les fichiers d'un dossier agents/ sont modifiables ici.");
+  }
+  return absolu;
 }
 
 const TITRE_SECTION = "## Sous-agents";

@@ -1,10 +1,14 @@
-import Link from "next/link";
-import { Formulaire } from "./Formulaire";
 import { notFound } from "next/navigation";
-import { Pastille, Silences } from "@/components/primitives";
+import { agir } from "./actions";
+import { Editeur } from "@/components/editeur/Editeur";
+import { ModuleIdentite } from "@/components/editeur/ModuleIdentite";
+import { EnteteFichier, RetourListe } from "@/components/EnteteFichier";
+import { Silences } from "@/components/primitives";
 import { verifierChemin } from "@/lib/ecriture/competence";
 import { ecritureOuverte } from "@/lib/acces/etat";
 import { lireAtelier } from "@/lib/lecture/atelier";
+import { lireTexte } from "@/lib/lecture/fichiers";
+import { lireConfig } from "@/lib/reglages/config";
 
 export const dynamic = "force-dynamic";
 
@@ -16,36 +20,66 @@ export default async function Detail({ params }: { params: Promise<{ chemin: str
 
   const refus = (await ecritureOuverte())
     ? raisonDuRefus(cible)
-    : "L'écriture demande un compte et un achat — la lecture reste entière. Voir la page Compte.";
+    : "L'écriture est fermée sur ce déploiement. La lecture reste entière.";
+  const config = lireConfig();
+  const nombreDeModules = 1 + (competence.corps.match(/^##\s+/gm)?.length ?? 0);
 
   return (
     <main>
-      <Link href="/" className="text-sm text-muted underline-offset-2 hover:underline">
-        ← toutes les compétences
-      </Link>
+      <RetourListe href="/competences" libelle="toutes les compétences" />
 
-      <header className="mt-4 mb-6">
-        <h1 className="flex flex-wrap items-baseline gap-3 text-2xl font-semibold">
-          {competence.nom}
-          <Pastille portee={competence.portee} origine={competence.origine} />
-          {!competence.invocableParLeModele && (
-            <span className="font-mono text-xs font-normal text-muted">invisible du modèle</span>
-          )}
-        </h1>
-        <p className="mt-1 font-mono text-xs text-muted">{competence.chemin}</p>
-        <Silences silences={competence.silences} />
-      </header>
+      <EnteteFichier
+        nom={competence.nom}
+        portee={competence.portee}
+        origine={competence.origine}
+        action={
+          <span className="font-mono text-meta text-muted">
+            lecture seule — toute écriture passe par Claude
+          </span>
+        }
+      >
+        <p className="mt-2 font-mono text-meta-lg text-muted">
+          {competence.chemin} · {nombreDeModules} modules
+        </p>
+      </EnteteFichier>
 
-      <Formulaire
-        chemin={competence.chemin}
-        description={competence.description}
-        indiceArgument={competence.indiceArgument}
-        corps={competence.corps}
-        modifiable={refus === ""}
-        raisonDuRefus={refus}
+      <Silences silences={competence.silences} />
+
+      <Editeur
+        fichier={{
+          chemin: competence.chemin,
+          nom: competence.nom,
+          corps: competence.corps,
+          entete: entete(competence.chemin, competence.corps),
+          nomFichier: "SKILL.md",
+        }}
+        action={agir}
+        modulesFixes={
+          <ModuleIdentite
+            icone="competences"
+            description={competence.description}
+            indiceArgument={competence.indiceArgument}
+          />
+        }
+        modele={config.modele}
+        cleConfiguree={config.cleApi !== ""}
+        refus={refus}
       />
     </main>
   );
+}
+
+/**
+ * Le frontmatter, délimiteurs compris — pris par différence.
+ *
+ * La lecture rend le corps comme la fin exacte du fichier (`brut.slice`) :
+ * l'en-tête est donc tout ce qui précède, au caractère près. Le reconstruire
+ * en re-sérialisant le YAML détruirait les lignes que YAML strict refuse et
+ * que Claude Code lit très bien.
+ */
+function entete(chemin: string, corps: string): string {
+  const brut = lireTexte(chemin);
+  return brut === null ? "" : brut.slice(0, brut.length - corps.length);
 }
 
 /** Chaîne vide si le fichier est modifiable, sinon la raison, en clair. */

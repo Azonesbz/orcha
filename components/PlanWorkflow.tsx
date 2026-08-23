@@ -54,7 +54,7 @@ export function PlanWorkflow({ workflow }: { workflow: Workflow }) {
      plus gros que le reste de la page. Le débordement du parent tient les
      écrans étroits — on fait défiler, on ne rapetisse pas. */
   return (
-    <div className="card overflow-x-auto p-5">
+    <div className="card overflow-x-auto p-6">
       <svg
         viewBox={`${-MARGE} 0 ${largeur} ${plan.hauteur}`}
         width={largeur}
@@ -98,7 +98,7 @@ export function PlanWorkflow({ workflow }: { workflow: Workflow }) {
             onBlur={() => setVise(null)}
           >
             {depart && (
-              <text x={x + 10} y={y - 12} className="fill-ink-soft font-mono text-[11px]">
+              <text x={x + 10} y={y - 10} className="fill-accent font-mono text-[11px]">
                 ▸ point de départ
               </text>
             )}
@@ -107,27 +107,41 @@ export function PlanWorkflow({ workflow }: { workflow: Workflow }) {
               y={y}
               width={BLOC.largeur}
               height={BLOC.hauteur}
-              rx={8}
-              className={`fill-paper ${etape.present ? "stroke-line" : "stroke-danger"}`}
-              style={{ strokeWidth: vise === id || depart ? 2 : 1, transition: FONDU }}
+              rx={10}
+              fill="var(--color-paper)"
+              stroke={
+                !etape.present
+                  ? "var(--color-danger)"
+                  : depart
+                    ? "var(--color-accent)"
+                    : "rgba(240,232,214,0.14)"
+              }
+              style={{ strokeWidth: vise === id ? 2 : depart ? 1.5 : 1, transition: FONDU }}
             />
-            <text x={x + 14} y={y + 24} className="fill-muted font-mono text-[13px]">
+            {/* Le numéro passe en Citron sur le point de départ : c'est là que
+                le regard doit tomber en premier, et le filet seul ne suffit pas. */}
+            <text
+              x={x + 14}
+              y={y + 39}
+              className="font-mono text-[13px]"
+              fill={depart ? "var(--color-accent)" : "var(--color-muted)"}
+            >
               {etape.numero}
             </text>
-            <text x={x + 44} y={y + 24} className="fill-ink text-[13px] font-medium">
+            <text x={x + 44} y={y + 31} className="fill-ink text-[13.5px] font-semibold">
               {couper(etape.role, 42)}
             </text>
-            <text x={x + 44} y={y + 44} className="fill-muted font-mono text-[11px]">
+            <text x={x + 44} y={y + 47} className="fill-muted font-mono text-[11px]">
               {etape.fichierDeclare} · {etape.present ? `${etape.lignes} l.` : "fichier absent"}
             </text>
             {etape.arretDur && (
               <text
                 x={x + BLOC.largeur - 14}
-                y={y + 24}
+                y={y + 39}
                 textAnchor="end"
                 className="fill-danger font-mono text-[11px]"
               >
-                arrêt dur
+                ■ arrêt dur
               </text>
             )}
           </g>
@@ -152,16 +166,33 @@ export function PlanWorkflow({ workflow }: { workflow: Workflow }) {
               height={SATELLITE.hauteur}
               rx={16}
               style={{ strokeWidth: vise === satellite.id ? 2 : 1, transition: FONDU }}
-              className={
-                satellite.sorte === "agent"
-                  ? "fill-ink-soft/15 stroke-ink-soft/40"
-                  : "fill-muted/10 stroke-muted/40"
-              }
+              fill={satellite.sorte === "agent" ? "rgba(125,211,252,0.08)" : "rgba(240,232,214,0.05)"}
+              stroke={satellite.sorte === "agent" ? "rgba(125,211,252,0.35)" : "rgba(240,232,214,0.22)"}
             />
+            <g
+              transform={`translate(${satellite.x + 12} ${satellite.y + 10})`}
+              fill="none"
+              stroke={satellite.sorte === "agent" ? "var(--color-sky)" : "var(--color-muted)"}
+              strokeWidth={3.6}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              {/* Le tracé est sur une grille de 24 : ramené à 12 px, le trait
+                  doit être multiplié d'autant pour rester à 1,8 à l'écran. */}
+              <path
+                transform="scale(0.5)"
+                d={
+                  satellite.sorte === "agent"
+                    ? "M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 20a8 8 0 0 1 16 0"
+                    : "m5 17 6-6-6-6M13 19h7"
+                }
+              />
+            </g>
             <text
-              x={satellite.x + 14}
+              x={satellite.x + 31}
               y={satellite.y + 21}
-              className={`font-mono text-[12px] ${satellite.sorte === "agent" ? "fill-ink-soft" : "fill-muted"}`}
+              className="font-mono text-[12px]"
+              fill={satellite.sorte === "agent" ? "var(--color-sky)" : "var(--color-muted)"}
             >
               {satellite.sorte === "competence" ? `/${satellite.nom}` : satellite.nom}
             </text>
@@ -206,7 +237,7 @@ function Trait({ lien, vif }: { lien: Lien; vif: boolean }) {
     <path
       d={`M${lien.de.x},${lien.de.y} C${lien.de.x + courbure},${lien.de.y} ${lien.vers.x - courbure},${lien.vers.y} ${lien.vers.x},${lien.vers.y}`}
       style={{ opacity: opacite, strokeWidth: vif ? 1.5 : 1, transition: FONDU }}
-      className="stroke-line"
+      stroke="rgba(240,232,214,0.15)"
       fill="none"
     />
   );

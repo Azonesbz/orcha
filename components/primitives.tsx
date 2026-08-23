@@ -1,18 +1,13 @@
+import { Icone } from "@/components/icones";
+import { COULEUR_PORTEE } from "@/components/portee";
 import type { Portee, Silence } from "@/lib/types";
-
-const COULEUR_PORTEE: Record<Portee, string> = {
-  utilisateur: "border-line-strong text-ink-soft",
-  projet: "border-accent/40 text-ink",
-  plugin: "text-muted",
-  intégré: "text-muted",
-};
 
 /**
  * Ce que chaque portée veut dire, en une phrase.
  *
  * Le mot « portée » ne définit rien pour qui découvre l'outil, et la couleur
- * seule ne portait pas l'information — `plugin` et `intégré` différaient de
- * 5 % d'opacité, soit 1,07:1.
+ * seule ne portait pas l'information — la charte code deux teintes et un
+ * neutre, ce qui ne suffit pas à distinguer un plugin d'un intégré.
  */
 const SENS_PORTEE: Record<Portee, string> = {
   utilisateur: "Vient de ton dossier personnel. Actif dans toutes tes sessions, et modifiable ici.",
@@ -22,13 +17,29 @@ const SENS_PORTEE: Record<Portee, string> = {
   intégré: "Fourni par Claude Code lui-même. Aucun fichier sur le disque.",
 };
 
+/** Bordure et encre, jamais d'aplat. Une origine longue se tronque, c'est voulu. */
 export function Pastille({ portee, origine }: { portee: Portee; origine: string }) {
   return (
+    <PastillePortee portee={portee}>
+      {portee} · {origine}
+    </PastillePortee>
+  );
+}
+
+/** La coquille seule — pour les endroits où la portée se dit sans son origine. */
+export function PastillePortee({
+  portee,
+  children,
+}: {
+  portee: Portee;
+  children: React.ReactNode;
+}) {
+  return (
     <span
-      className={`chip max-w-[14rem] shrink-0 truncate font-mono ${COULEUR_PORTEE[portee]}`}
+      className={`inline-block max-w-[16rem] shrink-0 truncate rounded-badge border px-2 py-0.5 font-mono text-meta ${COULEUR_PORTEE[portee]}`}
       title={SENS_PORTEE[portee]}
     >
-      {portee} · {origine}
+      {children}
     </span>
   );
 }
@@ -52,31 +63,38 @@ export function Panneau({
   const ancre = titre.toLowerCase().normalize("NFD").replace(/[^a-z]/g, "");
   return (
     <section id={ancre} className="mb-10 scroll-mt-4">
-      <h2 className="surtitre mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line pb-2">
-        {titre}
-        <span className="font-mono text-xs font-normal text-muted">{compte}</span>
+      <div className="mb-3.5 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line pb-2.5">
+        <h2 className="text-section font-semibold">{titre}</h2>
+        <span className="font-mono text-meta-lg text-muted">{compte}</span>
         {ecarts ? (
-          <span className="font-mono text-xs font-normal text-danger">
-            dont {ecarts} sans effet
-          </span>
+          <span className="font-mono text-meta-lg text-danger">dont {ecarts} sans effet</span>
         ) : null}
-      </h2>
-      {intro && <p className="mb-3 max-w-prose text-xs text-muted">{intro}</p>}
-      {compte === 0 ? <p className="text-sm text-muted">{vide ?? "Rien ici."}</p> : children}
+      </div>
+      {intro && <p className="mb-3.5 max-w-[70ch] text-description text-muted">{intro}</p>}
+      {compte === 0 ? <p className="text-corps text-muted">{vide ?? "Rien ici."}</p> : children}
     </section>
   );
 }
 
+/**
+ * Le rouge arrive toujours en deux temps : la cause en trois mots, le détail
+ * en une phrase. Un encart sans détail est une faute de charte.
+ */
 export function Silences({ silences }: { silences: Silence[] }) {
   if (silences.length === 0) return null;
   return (
-    <ul className="mt-1 w-full space-y-1">
+    <ul className="mt-2 flex w-full flex-col gap-1.5">
       {silences.map((s, i) => (
         <li
           key={i}
-          className="rounded border border-danger/40 bg-danger-wash px-2 py-1 text-xs text-danger"
+          className="flex items-baseline gap-2 rounded-lg border border-danger/30 bg-danger-wash px-2.5 py-[7px] text-meta-lg text-danger"
         >
-          <strong className="font-semibold">{s.cause}</strong> — {s.detail}
+          <span className="translate-y-[1.5px]">
+            <Icone nom="alerte" taille={12} />
+          </span>
+          <span>
+            <strong className="font-semibold">{s.cause}</strong> — {s.detail}
+          </span>
         </li>
       ))}
     </ul>
@@ -94,10 +112,10 @@ export function Entree({
   silences?: Silence[];
 }) {
   return (
-    <li className="border-b border-line py-2 last:border-0">
-      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">{titre}</div>
+    <li className="border-b border-line-faible py-3 last:border-0">
+      <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">{titre}</div>
       {description && (
-        <p className="mt-0.5 line-clamp-2 max-w-prose text-xs text-muted" title={description}>
+        <p className="mt-1 line-clamp-2 max-w-[70ch] text-note text-muted" title={description}>
           {description}
         </p>
       )}
@@ -107,5 +125,5 @@ export function Entree({
 }
 
 export function Liste({ children }: { children: React.ReactNode }) {
-  return <ul className="card px-4">{children}</ul>;
+  return <ul className="card px-5 py-0">{children}</ul>;
 }

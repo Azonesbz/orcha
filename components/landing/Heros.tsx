@@ -35,7 +35,7 @@ export function Heros() {
       <p className="mt-5 max-w-2xl text-base text-ink-soft sm:text-lg">
         Un plugin déclaré actif dont le code a disparu du disque. Un agent sans description. Une
         étape de workflow dont le fichier manque. Claude Code les accepte en silence — aucun
-        avertissement, code de retour 0. <span className="font-display">Orcha</span> fait la
+        avertissement, code de retour 0. <span className="font-semibold">Orcha</span> fait la
         soustraction entre ce que tu as déclaré et ce qui charge vraiment.
       </p>
 

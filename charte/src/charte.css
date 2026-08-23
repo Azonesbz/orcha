@@ -1,0 +1,201 @@
+/**
+ * La charte « Console » d'Orcha — jetons et utilitaires.
+ *
+ * Extraite de `app/globals.css` sans réécriture. Ce qui appartient à
+ * l'application y est resté : le fond de grille, le fond de modale, et les
+ * réglages de chrome fixe du corps, qui n'ont de sens que dans une fenêtre
+ * d'application.
+ */
+
+@import "tailwindcss";
+
+/* Direction artistique « Console », établie par la charte graphique v1.0.
+   Trois principes, et tout en découle :
+   1. Le fond est toujours Noir ; les surfaces montent d'un seul palier.
+   2. Le Citron est le seul accent — le Rouge n'est pas une couleur de marque,
+      c'est un signal, et il arrive toujours avec sa raison.
+   3. Ce qui existe sur le disque s'écrit en mono. La prose explique en
+      Bricolage ; le mono atteste.
+
+   Elle est sombre uniquement : l'identité vit sur Noir, c'est un interdit de
+   charte et non une préférence. */
+@theme {
+  /* Fonds : la page, puis l'unique palier au-dessus. */
+  --color-paper: #12100b;
+  --color-surface: #1b1813;
+
+  /* Encres, de la plus portante à la moins. L'estompe ne porte jamais un texte
+     nécessaire : 3,5:1, c'est une note de pied. */
+  --color-ink: #f3eedf;
+  --color-ink-soft: #c9c3b2;
+  --color-muted: #9c9684;
+  --color-faint: #6f6a5c;
+
+  /* L'accent unique : action primaire, sélection, portée « projet ». */
+  --color-accent: #a3e635;
+  --color-accent-soft: #d9f99d;
+  --color-accent-wash: rgba(163, 230, 53, 0.08);
+
+  /* La portée « utilisateur », et rien d'autre. */
+  --color-sky: #7dd3fc;
+
+  /* Réservé : silences, « sans effet », arrêts durs. Jamais décoratif. */
+  --color-danger: #f87171;
+  --color-danger-wash: rgba(248, 113, 113, 0.08);
+
+  /* Les bordures sont de la Crème diluée — quatre intensités, pas de gris
+     inventé. 8 % sépare deux lignes d'une même liste, 10 % ferme une carte,
+     18 % contourne, 28 % tient un champ ou un bouton. */
+  --color-line-faible: rgba(240, 232, 214, 0.08);
+  --color-line: rgba(240, 232, 214, 0.1);
+  --color-line-soft: rgba(240, 232, 214, 0.18);
+  --color-line-strong: rgba(240, 232, 214, 0.28);
+
+  --color-grid: rgba(240, 232, 214, 0.04);
+
+  --font-sans: var(--font-body), system-ui, sans-serif;
+  --font-mono: var(--font-mono-family), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Le rayon croît avec la surface. Quatre valeurs, pas une de plus. */
+  --radius-badge: 6px;
+  --radius-controle: 9px;
+  --radius-carte: 12px;
+
+  /* L'échelle typographique de la charte, au demi-pixel près. Les noms disent
+     le rôle, pas la taille : c'est le rôle qui décide, jamais l'œil. */
+  --text-etiquette: 10px;
+  --text-etiquette--line-height: 1.4;
+  --text-meta: 11px;
+  --text-meta--line-height: 1.5;
+  --text-meta-lg: 12px;
+  --text-meta-lg--line-height: 1.5;
+  --text-description: 12.5px;
+  --text-description--line-height: 1.6;
+  --text-note: 13px;
+  --text-note--line-height: 1.6;
+  --text-corps: 13.5px;
+  --text-corps--line-height: 1.6;
+  --text-module: 14.5px;
+  --text-module--line-height: 1.5;
+  --text-intro: 14.5px;
+  --text-intro--line-height: 1.6;
+  --text-section: 15px;
+  --text-section--line-height: 1.3;
+  --text-marque: 19px;
+  --text-marque--line-height: 1.2;
+  --text-ecran: 34px;
+  --text-ecran--line-height: 1.1;
+}
+
+html {
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
+/* `html body` et non `body` : la charte est sombre par définition, et un hôte
+   qui peint un fond blanc en style inline gagnerait sur une règle de même
+   spécificité — quelle que soit la couche. Deux sélecteurs suffisent à tenir
+   le sol sans !important. */
+html body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(163, 230, 53, 0.25);
+}
+
+/* Le focus passe la bordure en Citron — pas d'ombre, pas de halo. L'anneau
+   reste pour ce qui n'a pas de bordure à teindre. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Un seul primaire par écran, souvent aucun. Le rouge n'existe pas en bouton :
+   Orcha ne supprime rien. */
+@utility btn {
+  @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-controle
+         px-4 text-corps font-medium transition-colors
+         disabled:cursor-not-allowed disabled:opacity-45;
+}
+@utility btn-primary {
+  @apply btn bg-accent font-semibold text-paper;
+}
+@utility btn-secondary {
+  @apply btn border border-line-strong bg-transparent text-ink;
+}
+@utility btn-surface {
+  @apply btn border border-line-soft bg-surface text-ink;
+}
+@utility btn-ghost {
+  @apply btn text-muted;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--color-accent-soft);
+}
+.btn-secondary:hover:not(:disabled),
+.btn-surface:hover:not(:disabled) {
+  border-color: rgba(163, 230, 53, 0.4);
+}
+.btn-ghost:hover:not(:disabled) {
+  color: var(--color-ink);
+}
+
+@layer components {
+  /* Fond Noir dans une carte Surface, trait à 28 %. Pas de `focus:outline-none`
+     : on cumule l'anneau global et le renfort de bordure. Ne jamais substituer
+     un signal faible à un signal fort. */
+  .field {
+    @apply w-full rounded-controle border border-line-strong bg-paper px-3.5
+           py-2.5 text-corps text-ink placeholder:text-muted focus:border-accent;
+  }
+
+  .card {
+    @apply rounded-carte border border-line bg-surface;
+  }
+
+  .label {
+    @apply block text-note font-semibold text-ink;
+  }
+
+  /* Bordure et encre, jamais d'aplat. */
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-badge border border-line-soft
+           px-2 py-0.5 font-mono text-meta text-muted;
+  }
+
+  /* Le surtitre d'écran, en Citron : le seul geste typographique appuyé. */
+  .surtitre {
+    @apply font-mono text-meta uppercase text-accent;
+    letter-spacing: 0.18em;
+  }
+
+  /* L'étiquette d'une carte ou d'un module — capitales, approche +14 %. */
+  .etiquette {
+    @apply font-mono text-etiquette uppercase text-muted;
+    letter-spacing: 0.14em;
+  }
+}

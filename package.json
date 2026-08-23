@@ -13,6 +13,7 @@
     "empaqueter": "next build && node scripts/empaqueter.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.120.0",
     "@next/font": "^14.2.15",
     "next": "16.3.1",
     "react": "19.2.8",

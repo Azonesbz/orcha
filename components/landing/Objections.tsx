@@ -16,7 +16,7 @@ import type { ReactNode } from "react";
 
 function Objection({ question, children }: { question: ReactNode; children: ReactNode }) {
   return (
-    <details className="group card border-line-strong px-5 py-4 open:bg-surface-muted">
+    <details className="group card border-line-strong px-5 py-4 open:bg-accent-wash">
       <summary className="flex cursor-pointer list-none items-baseline justify-between gap-4 font-medium text-ink [&::-webkit-details-marker]:hidden">
         <span>{question}</span>
         <span aria-hidden className="font-mono text-muted">

@@ -23,7 +23,7 @@ export function PageLegale({
       <EnteteService />
 
       <article className="max-w-prose">
-        <h1 className="font-display text-3xl">{titre}</h1>
+        <h1 className="text-ecran font-semibold tracking-[-0.01em]">{titre}</h1>
         <p className="mt-2 text-xs text-muted">Dernière mise à jour : {miseAJour}</p>
 
         <div className="mt-8 space-y-6 text-sm text-ink-soft">{children}</div>

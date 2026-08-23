@@ -1,0 +1,29 @@
+{
+  "projectId": "838c7425-2b0d-4725-b8a6-895c08a4ddc3",
+  "shape": "package",
+  "pkg": "@orcha/charte",
+  "globalName": "OrchaCharte",
+  "buildCmd": "npm run build --prefix charte",
+  "srcDir": "src",
+  "tsconfig": "tsconfig.json",
+  "cssEntry": "dist/charte.css",
+  "overrides": {
+    "Entree": {
+      "cardMode": "column"
+    },
+    "Liste": {
+      "cardMode": "column"
+    },
+    "Panneau": {
+      "cardMode": "column"
+    },
+    "Silences": {
+      "cardMode": "column"
+    },
+    "Pastille": {
+      "cardMode": "column"
+    }
+  },
+  "readmeHeader": ".design-sync/conventions.md",
+  "entry": "charte/dist/index.mjs"
+}

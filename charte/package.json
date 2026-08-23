@@ -1,0 +1,22 @@
+{
+  "name": "@orcha/charte",
+  "version": "0.1.0",
+  "description": "La charte noire d'Orcha — jetons, utilitaires et primitives.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.mjs" },
+    "./styles.css": "./dist/charte.css"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "npm run build:js && npm run build:types && npm run build:css",
+    "build:js": "esbuild src/index.ts --bundle --format=esm --outfile=dist/index.mjs --external:react --external:react-dom --jsx=automatic",
+    "build:types": "tsc -p tsconfig.json",
+    "build:css": "tailwindcss -i src/charte.css -o dist/charte.css --content './src/**/*.{ts,tsx}'"
+  },
+  "peerDependencies": { "react": ">=18" }
+}

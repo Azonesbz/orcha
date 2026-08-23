@@ -57,7 +57,7 @@ export function Credibilite() {
         {MESURES.map((mesure) => (
           <div key={mesure.periode} className="bg-surface p-5">
             <p className="surtitre">{mesure.periode}</p>
-            <p className="mt-2 font-display text-3xl">{mesure.valeur}</p>
+            <p className="mt-2 font-mono text-3xl font-medium">{mesure.valeur}</p>
             <p className="mt-1 text-xs text-muted">transcriptions où la méthodo est appelée</p>
           </div>
         ))}
@@ -80,7 +80,7 @@ export function Credibilite() {
             </tr>
           ))}
           <tr className="bg-accent-wash">
-            <th scope="row" className={`${CELLULE} font-display text-base font-normal`}>Orcha</th>
+            <th scope="row" className={`${CELLULE} text-base font-semibold`}>Orcha</th>
             <td className="py-3 align-top text-ink-soft">
               Confronte le déclaré au présent sur le disque, et nomme l&apos;écart
             </td>

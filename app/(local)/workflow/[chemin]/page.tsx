@@ -1,8 +1,9 @@
 import Link from "next/link";
+import { Icone } from "@/components/icones";
 import { notFound } from "next/navigation";
 import { PlanWorkflow } from "@/components/PlanWorkflow";
 import { AtelierWorkflow } from "./Atelier";
-import { Pastille } from "@/components/primitives";
+import { EnteteFichier, RetourListe } from "@/components/EnteteFichier";
 import { verifierChemin } from "@/lib/ecriture/competence";
 import { EcritureRefusee } from "@/lib/ecriture/garde";
 import { ecritureOuverte } from "@/lib/acces/etat";
@@ -35,18 +36,19 @@ export default async function VueWorkflow({ params }: { params: Promise<{ chemin
 
   return (
     <main>
-      <Link href="/" className="text-sm text-muted underline-offset-2 hover:underline">
-        ← toutes les compétences
-      </Link>
+      <RetourListe href="/competences" libelle="toutes les compétences" />
 
-      <header className="mt-4 mb-8">
-        <h1 className="flex flex-wrap items-baseline gap-3 text-2xl font-semibold">
-          {competence.nom}
-          <Pastille portee={competence.portee} origine={competence.origine} />
-        </h1>
-        <p className="mt-2 text-sm text-muted">
-          {workflow.etapes.length} étapes · {arrets} arrêt{arrets > 1 ? "s" : ""} dur
-          {arrets > 1 ? "s" : ""} ·{" "}
+      <EnteteFichier
+        nom={competence.nom}
+        portee={competence.portee}
+        origine={competence.origine}
+      >
+        <p className="mt-2.5 text-intro text-muted">
+          {workflow.etapes.length} étapes ·{" "}
+          <span className={arrets > 0 ? "text-danger" : undefined}>
+            {arrets} arrêt{arrets > 1 ? "s" : ""} dur{arrets > 1 ? "s" : ""}
+          </span>{" "}
+          ·{" "}
           {workflow.depart
             ? `entrée déclarée à l'étape ${workflow.depart}`
             : "entrée non déclarée, la première du tableau fait foi"}
@@ -56,14 +58,16 @@ export default async function VueWorkflow({ params }: { params: Promise<{ chemin
         </p>
         <Link
           href={`/competence/${encodeURIComponent(competence.chemin)}`}
-          className="mt-1 inline-block text-sm underline underline-offset-2"
+          className="mt-1.5 inline-flex items-center gap-1.5 text-corps text-accent-soft underline decoration-accent/40 underline-offset-[3px] hover:decoration-accent"
         >
+          <Icone nom="editer" taille={13} trait={1.8} />
           modifier la compétence
         </Link>
-      </header>
+      </EnteteFichier>
 
-      <PlanWorkflow workflow={workflow} />
-
+      {/* La barre d'outils passe au-dessus du plan : les gestes qui modifient
+          la séquence se lisent avant elle, pas après un défilement de dix
+          étapes. */}
       <AtelierWorkflow
         cheminSkill={competence.chemin}
         etapes={workflow.etapes.map((e) => ({
@@ -79,22 +83,24 @@ export default async function VueWorkflow({ params }: { params: Promise<{ chemin
         numerotationATrou={numerotationATrou}
       />
 
-      <p className="mt-6 font-mono text-[11px] text-muted">
+      <PlanWorkflow workflow={workflow} />
+
+      <p className="mt-5 font-mono text-meta text-muted">
         trait plein : l&apos;étape nomme elle-même la suivante · trait pointillé : ordre du
         tableau seulement
       </p>
 
       {workflow.orphelins.length > 0 && (
         <section className="mt-8">
-          <h2 className="mb-2 text-sm font-semibold tracking-wide uppercase">
+          <h2 className="mb-2 text-section font-semibold">
             Fichiers hors séquence
           </h2>
-          <p className="mb-2 text-sm text-muted">
+          <p className="mb-2.5 text-description text-muted">
             Présents dans le dossier d&apos;étapes, absents du tableau : jamais lus.
           </p>
-          <ul className="rounded-lg border border-line bg-surface px-4">
+          <ul className="card px-5">
             {workflow.orphelins.map((chemin) => (
-              <li key={chemin} className="border-b border-line py-2 font-mono text-xs last:border-0">
+              <li key={chemin} className="border-b border-line-faible py-2.5 font-mono text-meta-lg last:border-0">
                 {chemin}
               </li>
             ))}

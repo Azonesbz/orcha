@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/Logo";
 
 /**
  * L'en-tête des pages publiques.
@@ -10,8 +11,8 @@ import Link from "next/link";
 export function EnteteService() {
   return (
     <header className="mb-8 flex items-center justify-between gap-4">
-      <Link href="/produit" className="font-display text-xl">
-        Orcha
+      <Link href="/produit">
+        <Logo />
       </Link>
 
       <a

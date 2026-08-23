@@ -1,42 +1,81 @@
 @import "tailwindcss";
 
-/* Direction artistique noire, reprise du portfolio via `academie-ia-dev`.
+/* Direction artistique « Console », établie par la charte graphique v1.0.
    Trois principes, et tout en découle :
-   1. Trois noirs séparés d'un ou deux pourcents de luminance, jamais un aplat.
-   2. La profondeur vient d'un filet de 1px en blanc alpha — aucune ombre.
-   3. Le blanc EST l'accent : il n'y a pas de couleur de marque.
+   1. Le fond est toujours Noir ; les surfaces montent d'un seul palier.
+   2. Le Citron est le seul accent — le Rouge n'est pas une couleur de marque,
+      c'est un signal, et il arrive toujours avec sa raison.
+   3. Ce qui existe sur le disque s'écrit en mono. La prose explique en
+      Bricolage ; le mono atteste.
 
-   Elle est sombre uniquement. Le thème clair qui existait ici est retiré :
-   deux chartes valent moins qu'une, et celle-ci est celle des autres projets. */
+   Elle est sombre uniquement : l'identité vit sur Noir, c'est un interdit de
+   charte et non une préférence. */
 @theme {
-  /* Fonds : page, surface élevée, bande discrète. */
-  --color-paper: #0a0a0a;
-  --color-surface: #111111;
-  --color-surface-muted: #151515;
+  /* Fonds : la page, puis l'unique palier au-dessus. */
+  --color-paper: #12100b;
+  --color-surface: #1b1813;
 
-  --color-ink: #fafafa;
-  --color-ink-soft: #d4d4d8;
-  --color-muted: #a1a1aa;
+  /* Encres, de la plus portante à la moins. L'estompe ne porte jamais un texte
+     nécessaire : 3,5:1, c'est une note de pied. */
+  --color-ink: #f3eedf;
+  --color-ink-soft: #c9c3b2;
+  --color-muted: #9c9684;
+  --color-faint: #6f6a5c;
 
-  /* Filets. Le 12 % ne rend que ~1,9:1 : indolore sur du décor, illisible sur
-     un champ. D'où un second filet à 35 % (~3,05:1, seuil WCAG 1.4.11). */
-  --color-line: rgba(250, 250, 250, 0.12);
-  --color-line-strong: rgba(250, 250, 250, 0.35);
+  /* L'accent unique : action primaire, sélection, portée « projet ». */
+  --color-accent: #a3e635;
+  --color-accent-soft: #d9f99d;
+  --color-accent-wash: rgba(163, 230, 53, 0.08);
 
-  --color-accent: #fafafa;
-  --color-accent-dark: #e4e4e7;
-  --color-accent-wash: rgba(250, 250, 250, 0.08);
+  /* La portée « utilisateur », et rien d'autre. */
+  --color-sky: #7dd3fc;
 
-  --color-amber: #fcd34d;
-  --color-amber-wash: rgba(252, 211, 77, 0.1);
-  --color-danger: #fca5a5;
-  --color-danger-wash: rgba(239, 68, 68, 0.1);
+  /* Réservé : silences, « sans effet », arrêts durs. Jamais décoratif. */
+  --color-danger: #f87171;
+  --color-danger-wash: rgba(248, 113, 113, 0.08);
 
-  --color-grid: rgba(250, 250, 250, 0.05);
+  /* Les bordures sont de la Crème diluée — quatre intensités, pas de gris
+     inventé. 8 % sépare deux lignes d'une même liste, 10 % ferme une carte,
+     18 % contourne, 28 % tient un champ ou un bouton. */
+  --color-line-faible: rgba(240, 232, 214, 0.08);
+  --color-line: rgba(240, 232, 214, 0.1);
+  --color-line-soft: rgba(240, 232, 214, 0.18);
+  --color-line-strong: rgba(240, 232, 214, 0.28);
+
+  --color-grid: rgba(240, 232, 214, 0.04);
 
   --font-sans: var(--font-body), system-ui, sans-serif;
-  --font-display: var(--font-display-family), ui-serif, serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-mono: var(--font-mono-family), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Le rayon croît avec la surface. Quatre valeurs, pas une de plus. */
+  --radius-badge: 6px;
+  --radius-controle: 9px;
+  --radius-carte: 12px;
+
+  /* L'échelle typographique de la charte, au demi-pixel près. Les noms disent
+     le rôle, pas la taille : c'est le rôle qui décide, jamais l'œil. */
+  --text-etiquette: 10px;
+  --text-etiquette--line-height: 1.4;
+  --text-meta: 11px;
+  --text-meta--line-height: 1.5;
+  --text-meta-lg: 12px;
+  --text-meta-lg--line-height: 1.5;
+  --text-description: 12.5px;
+  --text-description--line-height: 1.6;
+  --text-note: 13px;
+  --text-note--line-height: 1.6;
+  --text-corps: 13.5px;
+  --text-corps--line-height: 1.6;
+  --text-module: 14.5px;
+  --text-module--line-height: 1.5;
+  --text-intro: 14.5px;
+  --text-intro--line-height: 1.6;
+  --text-section: 15px;
+  --text-section--line-height: 1.3;
+  --text-marque: 19px;
+  --text-marque--line-height: 1.2;
+  --text-ecran: 34px;
+  --text-ecran--line-height: 1.1;
 }
 
 html {
@@ -48,26 +87,27 @@ body {
   background-color: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-sans);
-  font-size: clamp(1rem, 0.95rem + 0.2vw, 1.0625rem);
+  font-size: 15px;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
 ::selection {
-  background: var(--color-accent-wash);
+  background: rgba(163, 230, 53, 0.25);
 }
 
-/* Anneau de focus repris tel quel du portfolio, offset de 3px compris. */
+/* Le focus passe la bordure en Citron — pas d'ombre, pas de halo. L'anneau
+   reste pour ce qui n'a pas de bordure à teindre. */
 :focus-visible {
   outline: 2px solid var(--color-accent);
-  outline-offset: 3px;
+  outline-offset: 2px;
   border-radius: 3px;
 }
 :focus:not(:focus-visible) {
   outline: none;
 }
 
-/* Grille de fond : 64px, masquée en ellipse depuis le haut. Décorative, donc
+/* Grille de fond : 56px, masquée en ellipse depuis le haut. Décorative, donc
    derrière tout et ignorée des lecteurs d'écran. `absolute` et non `fixed` :
    elle appartient à la zone de contenu, pas à la fenêtre — le rail garde son
    fond propre. */
@@ -79,8 +119,8 @@ body {
   background-image:
     linear-gradient(var(--color-grid) 1px, transparent 1px),
     linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, black 20%, transparent 70%);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 20%, transparent 70%);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -96,69 +136,76 @@ body {
   }
 }
 
-/* Le rayon croît avec la surface : 6px un contrôle, 8px un bouton, 16px une
-   carte. Règle du portfolio, pas un hasard. */
+/* Un seul primaire par écran, souvent aucun. Le rouge n'existe pas en bouton :
+   Orcha ne supprime rien. */
 @utility btn {
-  @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4
-         text-sm font-medium transition-colors disabled:cursor-not-allowed
-         disabled:opacity-45;
+  @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-controle
+         px-4 text-corps font-medium transition-colors
+         disabled:cursor-not-allowed disabled:opacity-45;
 }
 @utility btn-primary {
   @apply btn bg-accent font-semibold text-paper;
 }
 @utility btn-secondary {
-  @apply btn border border-line bg-surface text-ink;
+  @apply btn border border-line-strong bg-transparent text-ink;
+}
+@utility btn-surface {
+  @apply btn border border-line-soft bg-surface text-ink;
 }
 @utility btn-ghost {
   @apply btn text-muted;
 }
-@utility btn-danger {
-  @apply btn border border-danger/40 bg-danger-wash text-danger;
-}
 
 .btn-primary:hover:not(:disabled) {
-  background-color: var(--color-accent-dark);
+  background-color: var(--color-accent-soft);
 }
-.btn-secondary:hover:not(:disabled) {
-  border-color: color-mix(in oklab, var(--color-accent) 40%, transparent);
-  background-color: var(--color-accent-wash);
+.btn-secondary:hover:not(:disabled),
+.btn-surface:hover:not(:disabled) {
+  border-color: rgba(163, 230, 53, 0.4);
 }
 .btn-ghost:hover:not(:disabled) {
-  background-color: var(--color-accent-wash);
   color: var(--color-ink);
 }
 
 @layer components {
-  /* Pas de `focus:outline-none` : on cumule l'anneau global et un renfort de
-     bordure. Ne jamais substituer un signal faible à un signal fort. */
+  /* Fond Noir dans une carte Surface, trait à 28 %. Pas de `focus:outline-none`
+     : on cumule l'anneau global et le renfort de bordure. Ne jamais substituer
+     un signal faible à un signal fort. */
   .field {
-    @apply w-full rounded-md border border-line-strong bg-surface px-3 py-2
-           text-sm text-ink placeholder:text-muted/70 focus:border-accent/60;
+    @apply w-full rounded-controle border border-line-strong bg-paper px-3.5
+           py-2.5 text-corps text-ink placeholder:text-muted focus:border-accent;
   }
 
   .card {
-    @apply rounded-2xl border border-line bg-surface;
+    @apply rounded-carte border border-line bg-surface;
   }
 
   .label {
-    @apply mb-1.5 block text-sm font-medium text-ink-soft;
+    @apply block text-note font-semibold text-ink;
   }
 
+  /* Bordure et encre, jamais d'aplat. */
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-line
-           px-2.5 py-0.5 text-xs font-medium tabular-nums text-muted;
+    @apply inline-flex items-center gap-1.5 rounded-badge border border-line-soft
+           px-2 py-0.5 font-mono text-meta text-muted;
   }
 
-  /* Surtitre en capitales espacées — le seul geste typographique appuyé. */
+  /* Le surtitre d'écran, en Citron : le seul geste typographique appuyé. */
   .surtitre {
-    @apply text-xs font-medium uppercase text-muted;
+    @apply font-mono text-meta uppercase text-accent;
     letter-spacing: 0.18em;
+  }
+
+  /* L'étiquette d'une carte ou d'un module — capitales, approche +14 %. */
+  .etiquette {
+    @apply font-mono text-etiquette uppercase text-muted;
+    letter-spacing: 0.14em;
   }
 }
 
 /* Le fond de modale : le noir de la page, adouci. `::backdrop` ne suit pas
    l'héritage, il faut donc y répéter la couleur. */
 dialog::backdrop {
-  background: rgba(10, 10, 10, 0.8);
+  background: rgba(18, 16, 11, 0.8);
   backdrop-filter: blur(2px);
 }

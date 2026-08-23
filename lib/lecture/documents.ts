@@ -13,6 +13,13 @@ import { basename, join } from "node:path";
 import type { Agent, Commande, Portee, Silence } from "../types.ts";
 import { decouper, estDossier, listerFichiers, lireTexte } from "./fichiers.ts";
 
+/* Ce que dit un agent qui ne déclare ni `tools` ni `model`. Nommé plutôt que
+   recopié : l'éditeur doit pouvoir distinguer « rien de déclaré » d'une vraie
+   liste d'outils, et comparer deux littéraux identiques à distance est
+   exactement ce qui finit par diverger. */
+export const OUTILS_HERITES = "hérités de la session";
+export const MODELE_DE_SESSION = "celui de la session";
+
 export function lireAgents(racine: string, portee: Portee, origine: string): Agent[] {
   return lireDossier(racine, "agents", portee, origine).map(({ nom, entete, corps, chemin, silences }) => ({
     nom,
@@ -20,8 +27,8 @@ export function lireAgents(racine: string, portee: Portee, origine: string): Age
     origine,
     chemin,
     description: texte(entete.description),
-    outils: texte(entete.tools) || "hérités de la session",
-    modele: texte(entete.model) || "celui de la session",
+    outils: texte(entete.tools) || OUTILS_HERITES,
+    modele: texte(entete.model) || MODELE_DE_SESSION,
     corps,
     silences: [...silences, ...sansDescription(entete, "Sans description, le modèle ne saura jamais quand déléguer à cet agent.")],
   }));

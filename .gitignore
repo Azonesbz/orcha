@@ -24,3 +24,11 @@ __pycache__/
 
 # Le paquet npm assemblé — reconstruit à chaque publication.
 paquet/
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
+
+# Le dist de la charte est reconstruit par `npm run build --prefix charte`.
+charte/dist/
