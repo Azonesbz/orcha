@@ -26,6 +26,10 @@ const INTERDITS = [
   // chunks compilés. Les garder alourdit le paquet et laisse croire qu'on
   // distribue le dépôt.
   /^docs$/, /^scripts$/, /^atelier-claude$/, /^deployer\.sh$/, /^compose\.yaml$/,
+  // La publication précédente, que le traçage de Next ramasse dans le dossier
+  // de travail. Sans cette ligne chaque version embarque la précédente, qui
+  // embarquait la sienne : 4,2 Mo en 0.2.0, 7,5 Mo en 0.3.0, et ça double.
+  /^paquet$/, /^charte$/, /^\.ds-sync$/, /^ds-bundle$/, /^\.design-sync$/,
   /^Dockerfile$/, /^proxy\.ts$/, /^next-env\.d\.ts$/, /^tsconfig\.json$/,
   /^postcss\.config\.mjs$/, /^next\.config\.ts$/, /^tsconfig\.tsbuildinfo$/,
 ];
@@ -52,6 +56,12 @@ const app = JSON.parse(readFileSync(join(RACINE, "package.json"), "utf8"));
 
 rmSync(SORTIE, { recursive: true, force: true });
 mkdirSync(SORTIE, { recursive: true });
+
+/* La purge ci-dessous rattrape ce qui a été copié ; elle ne peut rien contre
+   ce que `next build` a déjà tracé. Vider `paquet/` AVANT de compiler est la
+   seule vraie parade — d'où l'ordre du script `empaqueter` : `next build`
+   d'abord, puis ce fichier. Si un paquet traîne du build précédent, il est
+   dans le standalone, et seule la purge l'en sort. */
 
 // Le serveur autonome et ses ressources.
 cpSync(join(RACINE, ".next/standalone"), SORTIE, { recursive: true });
