@@ -26,6 +26,10 @@ const VIERGE: RetourAgent = { etat: "vierge", texte: "", instantane: "", dossier
 /**
  * Le fil de la discussion.
  *
+ * L'attente de l'agent ne s'y affiche pas : elle est annoncée au-dessus du
+ * champ de saisie. Un « il réfléchit » posé dans le fil se lit comme un
+ * message de plus, alors que ce n'est pas un tour de parole.
+ *
  * Le défilement vient de `message-scroller` : il suit la réponse qui arrive,
  * garde un bout du tour précédent visible pour ne pas perdre le contexte, et
  * rend le bouton « descendre » dès qu'on remonte lire. Réimplémenter ça à la
@@ -34,16 +38,8 @@ const VIERGE: RetourAgent = { etat: "vierge", texte: "", instantane: "", dossier
  * Chaque tour de l'agent garde SON instantané : revenir en arrière depuis le
  * troisième tour ne doit pas défaire le premier.
  */
-export function Fil({
-  tours,
-  enCours,
-  session,
-}: {
-  tours: Tour[];
-  enCours: boolean;
-  session: string;
-}) {
-  if (tours.length === 0 && !enCours) return <div className="min-h-0 flex-1" />;
+export function Fil({ tours, session }: { tours: Tour[]; session: string }) {
+  if (tours.length === 0) return <div className="min-h-0 flex-1" />;
 
   return (
     <MessageScrollerProvider autoScroll defaultScrollPosition="end" scrollPreviousItemPeek={24}>
@@ -55,15 +51,6 @@ export function Fil({
                 <Bulle tour={tour} session={session} />
               </MessageScrollerItem>
             ))}
-            {enCours && (
-              <MessageScrollerItem messageId="en-cours">
-                {/* `shimmer` vient de shadcn/tailwind.css : l'attente se dit par
-                    le texte qui respire, pas par un point qui clignote. */}
-                <p className="shimmer font-mono text-meta text-muted">
-                  l&apos;agent lit, réfléchit et répond…
-                </p>
-              </MessageScrollerItem>
-            )}
           </MessageScrollerContent>
         </MessageScrollerViewport>
         <MessageScrollerButton className="absolute right-4 bottom-4" />

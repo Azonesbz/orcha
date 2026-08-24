@@ -86,18 +86,24 @@ export function Agent() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOuvert((o) => !o)}
-        aria-expanded={ouvert}
-        className="btn-primary fixed right-6 bottom-6 z-50 shadow-lg"
-      >
-        <Icone nom="proposer" taille={15} />
-        {ouvert ? "Fermer" : "Ask agent"}
-        {!ouvert && tours.length > 0 && (
-          <span className="rounded-full bg-paper/20 px-1.5 font-mono text-meta">{tours.length}</span>
-        )}
-      </button>
+      {/* Le déclencheur s'efface quand le panneau est là : la croix de l'en-tête
+          ferme, et un bouton posé par-dessus le fil gênerait la lecture. */}
+      {!ouvert && (
+        <button
+          type="button"
+          onClick={() => setOuvert(true)}
+          aria-expanded={false}
+          className="btn-primary fixed right-6 bottom-6 z-50 shadow-lg"
+        >
+          <Icone nom="proposer" taille={15} />
+          Ask agent
+          {tours.length > 0 && (
+            <span className="rounded-full bg-paper/20 px-1.5 font-mono text-meta">
+              {tours.length}
+            </span>
+          )}
+        </button>
+      )}
 
       {/* Posé à côté, jamais par-dessus : on lit l'écran pendant qu'on en parle. */}
       <aside
@@ -106,29 +112,37 @@ export function Agent() {
           ouvert ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <header className="border-b border-line px-5 py-4">
-          <div className="flex items-baseline gap-2.5">
-            <span className="text-accent">
-              <Icone nom="proposer" taille={15} />
-            </span>
+        <header className="flex items-start gap-3 border-b border-line px-5 py-4">
+          <span className="mt-0.5 text-accent">
+            <Icone nom="proposer" taille={15} />
+          </span>
+          <div className="min-w-0 flex-1">
             <h2 className="text-section font-semibold">Discussion</h2>
-            {tours.length > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  setTours([]);
-                  setSession("");
-                  localStorage.removeItem(MEMOIRE);
-                }}
-                className="ml-auto font-mono text-meta text-muted underline underline-offset-[3px] hover:text-ink"
-              >
-                repartir de zéro
-              </button>
-            )}
+            <p className="mt-0.5 truncate font-mono text-meta text-muted">
+              {contexte ? `il regarde : ${contexte.titre}` : "lecture du contexte…"}
+            </p>
           </div>
-          <p className="mt-1 font-mono text-meta text-muted">
-            {contexte ? `il regarde : ${contexte.titre}` : "lecture du contexte…"}
-          </p>
+          {tours.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setTours([]);
+                setSession("");
+                localStorage.removeItem(MEMOIRE);
+              }}
+              className="shrink-0 font-mono text-meta text-muted underline underline-offset-[3px] hover:text-ink"
+            >
+              repartir de zéro
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setOuvert(false)}
+            aria-label="Fermer la discussion"
+            className="btn-ghost min-h-0 shrink-0 px-1.5 py-1"
+          >
+            <Icone nom="fermer" taille={16} />
+          </button>
         </header>
 
         <form
@@ -154,15 +168,15 @@ export function Agent() {
           />
 
           {contexte && !contexte.peutEcrire && (
-            <p className="rounded-controle border border-line-soft px-3 py-2 font-mono text-meta text-muted">
+            <p className="shrink-0 rounded-controle border border-line-soft px-3 py-2 font-mono text-meta text-muted">
               lecture seule ici — un plugin ne se modifie pas depuis Orcha
             </p>
           )}
 
-          <Fil tours={tours} enCours={enCours} session={session} />
+          <Fil tours={tours} session={session} />
 
           {tours.length === 0 && contexte && (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex shrink-0 flex-wrap gap-2">
               {contexte.suggestions.map((s) => (
                 <button
                   key={s}
@@ -176,33 +190,47 @@ export function Agent() {
             </div>
           )}
 
-          <textarea
-            name="instruction"
-            rows={3}
-            value={instruction}
-            onChange={(e) => setInstruction(e.target.value)}
-            onKeyDown={(e) => {
-              // Entrée envoie, Maj+Entrée passe à la ligne — l'habitude de
-              // toute messagerie, et de celle-ci.
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                e.currentTarget.form?.requestSubmit();
-              }
-            }}
-            placeholder={tours.length ? "Réponds, ou demande autre chose…" : "Ce que tu veux savoir, ou changer."}
-            className="field shrink-0 resize-none text-note leading-[1.6]"
-          />
+          {/* L'état de l'agent s'annonce ici, entre le fil et le champ : ce
+              n'est pas un tour de parole, ça n'a rien à faire dans le fil. */}
+          {enCours && (
+            <div className="shrink-0 rounded-controle border border-accent/25 bg-accent/5 px-3.5 py-2.5">
+              <p className="shimmer font-mono text-meta">
+                {contexte?.peutEcrire
+                  ? "l'agent lit, réfléchit, et peut modifier des fichiers…"
+                  : "l'agent lit et réfléchit…"}
+              </p>
+            </div>
+          )}
 
-          <div className="flex shrink-0 items-center gap-3">
-            <button type="submit" disabled={enCours} className="btn-primary">
-              <Icone nom="proposer" taille={14} />
-              <span className={enCours ? "shimmer" : undefined}>
-                {enCours ? "L'agent réfléchit…" : "Envoyer"}
-              </span>
+          {/* Le bouton vit dans le champ : une messagerie n'a pas de bouton
+              posé à côté, elle a une flèche au bord de la zone de saisie. */}
+          <div className="relative shrink-0">
+            <textarea
+              name="instruction"
+              rows={3}
+              value={instruction}
+              onChange={(e) => setInstruction(e.target.value)}
+              onKeyDown={(e) => {
+                // Entrée envoie, Maj+Entrée passe à la ligne — l'habitude de
+                // toute messagerie, et de celle-ci.
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  e.currentTarget.form?.requestSubmit();
+                }
+              }}
+              placeholder={
+                tours.length ? "Réponds, ou demande autre chose…" : "Ce que tu veux savoir, ou changer."
+              }
+              className="field resize-none py-3 pr-14 text-note leading-[1.6]"
+            />
+            <button
+              type="submit"
+              disabled={enCours || instruction.trim() === ""}
+              aria-label="Envoyer"
+              className="btn-primary absolute right-2.5 bottom-2.5 min-h-0 size-9 px-0"
+            >
+              <Icone nom="envoyer" taille={16} trait={2} />
             </button>
-            <span className="font-mono text-meta text-muted">
-              {contexte?.peutEcrire ? "il peut écrire · instantané avant" : "⏎ pour envoyer"}
-            </span>
           </div>
         </form>
       </aside>

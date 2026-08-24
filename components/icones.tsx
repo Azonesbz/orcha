@@ -20,6 +20,8 @@ const TRACES = {
   hooks: "M13 2 4 14h6l-1 8 9-12h-6l1-8Z",
   dossier: "M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
   retour: "M19 12H5M11 18l-6-6 6-6",
+  fermer: "M18 6 6 18M6 6l12 12",
+  envoyer: "M12 19V5M5 12l7-7 7 7",
   valider: "M20 6 9 17l-5-5",
   editer: "M17 3l4 4L8 20l-5 1 1-5 13-13z",
   "arret-dur": "M7 7h10v10H7z",
