@@ -205,6 +205,34 @@ function rendre(plan: PlanRenumerotation, ecrit: boolean): Retour {
   };
 }
 
+/**
+ * Réordonner les étapes, depuis le plan.
+ *
+ * Le glisser dans l'écran ne fait que produire un ordre ; tout le reste est la
+ * renumérotation qui existait déjà — renommer les fichiers, réécrire le
+ * tableau, suivre les renvois que les étapes se font entre elles. On ne
+ * réinvente rien, on lui passe l'ordre voulu.
+ */
+export async function reordonner(_precedent: Retour, formulaire: FormData): Promise<Retour> {
+  try {
+    await exigerLaLicence();
+  } catch (erreur) {
+    return { etat: "refuse", message: erreur instanceof Error ? erreur.message : "Refusé." };
+  }
+
+  const cheminSkill = String(formulaire.get("skill") ?? "");
+  const ordre = String(formulaire.get("ordre") ?? "").split(",").filter(Boolean);
+  if (ordre.length === 0) return { etat: "refuse", message: "Aucun ordre reçu." };
+
+  try {
+    const plan = appliquerRenumerotation(cheminSkill, relire(cheminSkill), undefined, ordre);
+    revalidatePath("/", "layout");
+    return rendre(plan, true);
+  } catch (erreur) {
+    return { etat: "refuse", message: erreur instanceof Error ? erreur.message : "Refusé." };
+  }
+}
+
 export async function apercuRenumerotation(_precedent: Retour, formulaire: FormData): Promise<Retour> {
   const cheminSkill = String(formulaire.get("skill") ?? "");
   try {

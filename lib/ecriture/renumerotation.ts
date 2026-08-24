@@ -57,13 +57,23 @@ export function empreinteDuPlan(plan: PlanRenumerotation): string {
   ]);
 }
 
-/** Le plan complet, sans rien écrire. Un plan vide veut dire « rien à faire ». */
-export function planifierRenumerotation(cheminSkill: string, workflow: Workflow): PlanRenumerotation {
+/**
+ * Le plan complet, sans rien écrire. Un plan vide veut dire « rien à faire ».
+ *
+ * `ordre` donne les numéros actuels dans l'ordre voulu — c'est ce qui permet
+ * de RÉORDONNER et pas seulement de refermer les trous. Sans lui, l'ordre est
+ * celui des numéros, et le comportement reste celui d'origine.
+ */
+export function planifierRenumerotation(
+  cheminSkill: string,
+  workflow: Workflow,
+  ordre?: string[],
+): PlanRenumerotation {
   const absolu = cheminModifiable(cheminSkill);
   const { largeur } = conventionDe(workflow);
   const racine = dirname(absolu);
 
-  const ordonnees = [...workflow.etapes].sort((a, b) => Number(a.numero) - Number(b.numero));
+  const ordonnees = ordre ? selonLOrdre(workflow, ordre) : [...workflow.etapes].sort((a, b) => Number(a.numero) - Number(b.numero));
   const deplacements = ordonnees
     .map((etape, index) => construire(etape, String(index).padStart(largeur, "0"), racine))
     .filter((d): d is Deplacement => d !== null);
@@ -75,6 +85,28 @@ export function planifierRenumerotation(cheminSkill: string, workflow: Workflow)
   const occurrences = fichiers.flatMap((fichier) => occurrencesDe(fichier, substituer, deplacements));
 
   return { deplacements, occurrences };
+}
+
+/**
+ * Les étapes rangées selon l'ordre demandé.
+ *
+ * Un ordre incomplet est refusé plutôt que complété : réordonner en oubliant
+ * une étape la ferait disparaître du tableau, et une étape hors séquence n'est
+ * plus jamais lue — l'écart même que cet outil sert à détecter.
+ */
+function selonLOrdre(workflow: Workflow, ordre: string[]): Workflow["etapes"] {
+  const parNumero = new Map(workflow.etapes.map((e) => [e.numero, e]));
+  if (ordre.length !== workflow.etapes.length || new Set(ordre).size !== ordre.length) {
+    throw new EcritureRefusee(
+      `L'ordre demandé compte ${ordre.length} étapes pour ${workflow.etapes.length} au tableau.`,
+    );
+  }
+
+  return ordre.map((numero) => {
+    const etape = parNumero.get(numero);
+    if (!etape) throw new EcritureRefusee(`L'étape ${numero} n'est pas dans ce workflow.`);
+    return etape;
+  });
 }
 
 function construire(
@@ -172,10 +204,15 @@ export function appliquerRenumerotation(
   cheminSkill: string,
   workflow: Workflow,
   empreinteAttendue?: string,
+  ordre?: string[],
 ): PlanRenumerotation {
-  const plan = planifierRenumerotation(cheminSkill, workflow);
+  const plan = planifierRenumerotation(cheminSkill, workflow, ordre);
   if (plan.deplacements.length === 0) {
-    throw new EcritureRefusee("La numérotation est déjà continue : rien à faire.");
+    throw new EcritureRefusee(
+      ordre
+        ? "Cet ordre est déjà celui du tableau : rien à faire."
+        : "La numérotation est déjà continue : rien à faire.",
+    );
   }
   if (empreinteAttendue && empreinteDuPlan(plan) !== empreinteAttendue) {
     throw new EcritureRefusee(DIVERGENCE);

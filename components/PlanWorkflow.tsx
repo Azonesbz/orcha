@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { BLOC, mettreEnPlan, SATELLITE, type Lien } from "@/lib/plan";
 import type { Workflow } from "@/lib/lecture/workflow";
 
@@ -31,13 +31,63 @@ const GOUTTIERE_SURVOL = 170;
 export function PlanWorkflow({
   workflow,
   destinations,
+  surReordre,
 }: {
   workflow: Workflow;
   /** Où mène chaque bloc et chaque satellite, par identité. Vide = non cliquable. */
   destinations?: Record<string, string>;
+  /** Appelé au dépôt d'une étape déplacée, avec les numéros dans l'ordre voulu. */
+  surReordre?: (ordre: string[]) => void;
 }) {
   const plan = useMemo(() => mettreEnPlan(workflow), [workflow]);
   const [vise, setVise] = useState<string | null>(null);
+  const [glisse, setGlisse] = useState<{ id: string; de: number; vers: number } | null>(null);
+  /* Un bloc est aussi un lien : sans ce drapeau, tout déplacement finirait par
+     ouvrir le fichier au relâchement. */
+  const aGlisse = useRef(false);
+
+  const pas = BLOC.hauteur + 30;
+
+  /**
+   * Le déplacement d'une étape, à la souris comme au doigt.
+   *
+   * Le seuil de cinq pixels sépare le clic du glisser : en dessous, on ouvre le
+   * fichier ; au-dessus, on déplace. Sans lui, un clic un peu tremblant
+   * réordonnerait le workflow.
+   */
+  function prendre(evenement: React.PointerEvent, id: string, index: number) {
+    if (!surReordre || evenement.button !== 0) return;
+    const departY = evenement.clientY;
+    const cible = evenement.currentTarget as SVGGElement;
+    cible.setPointerCapture(evenement.pointerId);
+    aGlisse.current = false;
+
+    const bouger = (evt: Event) => {
+      const e = evt as PointerEvent;
+      const ecart = e.clientY - departY;
+      if (!aGlisse.current && Math.abs(ecart) < 5) return;
+      aGlisse.current = true;
+      const vers = Math.max(0, Math.min(plan.blocs.length - 1, index + Math.round(ecart / pas)));
+      setGlisse({ id, de: index, vers });
+    };
+
+    const lacher = () => {
+      cible.removeEventListener("pointermove", bouger);
+      cible.removeEventListener("pointerup", lacher);
+      setGlisse((actuel) => {
+        if (actuel && actuel.vers !== actuel.de) {
+          const numeros = plan.blocs.map((b) => b.etape.numero);
+          const [pris] = numeros.splice(actuel.de, 1);
+          numeros.splice(actuel.vers, 0, pris);
+          surReordre(numeros);
+        }
+        return null;
+      });
+    };
+
+    cible.addEventListener("pointermove", bouger);
+    cible.addEventListener("pointerup", lacher);
+  }
 
   /** Les identités à garder vives : la cible et son voisinage direct. */
   const enAvant = useMemo(() => {
@@ -92,14 +142,25 @@ export function PlanWorkflow({
           <Trait key={i} lien={lien} vif={vifLien(lien)} />
         ))}
 
-        {plan.blocs.map(({ id, etape, x, y, depart, appelle }) => (
-          <Ouvrable key={id} vers={destinations?.[id]}>
+        {plan.blocs.map(({ id, etape, x, y, depart, appelle }, index) => (
+          <Ouvrable
+            key={id}
+            vers={destinations?.[id]}
+            surClic={(e) => {
+              if (aGlisse.current) {
+                e.preventDefault();
+                aGlisse.current = false;
+              }
+            }}
+          >
           <g
+            onPointerDown={(e) => prendre(e, id, index)}
+            transform={decalage(index, glisse, pas)}
             tabIndex={destinations?.[id] ? undefined : 0}
             role="listitem"
             aria-label={`Étape ${etape.numero} — ${etape.role}${appelle.length ? `, appelle ${appelle.length} élément(s)` : ""}`}
             style={{ opacity: vif(id) ? 1 : ESTOMPE, transition: FONDU }}
-            className={destinations?.[id] ? "cursor-pointer" : "cursor-default"}
+            className={surReordre ? "cursor-grab" : destinations?.[id] ? "cursor-pointer" : "cursor-default"}
             onMouseEnter={() => setVise(id)}
             onFocus={() => setVise(id)}
             onBlur={() => setVise(null)}
@@ -244,13 +305,40 @@ export function PlanWorkflow({
  * tabulation continuent de marcher, et l'élément est annoncé comme un lien.
  * Un `onClick` aurait fabriqué un faux bouton qu'aucun clavier n'atteint.
  */
-function Ouvrable({ vers, children }: { vers?: string; children: React.ReactNode }) {
+function Ouvrable({
+  vers,
+  surClic,
+  children,
+}: {
+  vers?: string;
+  surClic?: (e: React.MouseEvent) => void;
+  children: React.ReactNode;
+}) {
   if (!vers) return <>{children}</>;
   return (
-    <a href={vers} className="focus-visible:outline-accent">
+    <a href={vers} onClick={surClic} className="focus-visible:outline-accent">
       {children}
     </a>
   );
+}
+
+/**
+ * Le décalage visuel pendant un glisser.
+ *
+ * Le bloc pris suit le curseur ; ceux qu'il enjambe se poussent d'un cran. On
+ * ne redessine pas le plan à chaque pixel : ce serait recalculer onze positions
+ * et autant d'arêtes soixante fois par seconde pour un aperçu.
+ */
+function decalage(
+  index: number,
+  glisse: { id: string; de: number; vers: number } | null,
+  pas: number,
+): string | undefined {
+  if (!glisse) return undefined;
+  if (index === glisse.de) return `translate(0 ${(glisse.vers - glisse.de) * pas})`;
+  if (glisse.de < index && index <= glisse.vers) return `translate(0 ${-pas})`;
+  if (glisse.vers <= index && index < glisse.de) return `translate(0 ${pas})`;
+  return undefined;
 }
 
 function Trait({ lien, vif }: { lien: Lien; vif: boolean }) {

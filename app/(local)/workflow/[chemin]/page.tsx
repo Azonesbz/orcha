@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Icone } from "@/components/icones";
 import { versLEditeur } from "@/lib/chrome/retour";
 import { notFound } from "next/navigation";
-import { PlanWorkflow } from "@/components/PlanWorkflow";
+import { PlanReordonnable } from "./Reordonnable";
 import { AtelierWorkflow } from "./Atelier";
 import { EnteteFichier, RetourListe } from "@/components/EnteteFichier";
 import { verifierChemin } from "@/lib/ecriture/competence";
@@ -84,7 +84,12 @@ export default async function VueWorkflow({ params }: { params: Promise<{ chemin
         numerotationATrou={numerotationATrou}
       />
 
-      <PlanWorkflow workflow={workflow} destinations={destinations(atelier, workflow, competence.chemin)} />
+      <PlanReordonnable
+        workflow={workflow}
+        destinations={destinations(atelier, workflow, competence.chemin)}
+        cheminSkill={competence.chemin}
+        modifiable={refus === ""}
+      />
 
       <p className="mt-5 font-mono text-meta text-muted">
         trait plein : l&apos;étape nomme elle-même la suivante · trait pointillé : ordre du

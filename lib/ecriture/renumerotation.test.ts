@@ -6,7 +6,7 @@
  */
 
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -177,4 +177,58 @@ test("appliquer sur le plan montré passe", () => {
 
   // Assert
   assert.ok(existsSync(join(dossier, "step-02-execute.md")));
+});
+
+test("un ordre donné réordonne, au lieu de seulement refermer les trous", () => {
+  // Arrange — 00, 01, 03, 04 devient 03, 00, 01, 04 : l'étape « execute »
+  // passe en tête.
+  const { skill, workflow } = atelierATrou();
+
+  // Act
+  const plan = planifierRenumerotation(skill, workflow, ["03", "00", "01", "04"]);
+
+  // Assert
+  const arrivee = new Map(plan.deplacements.map((d) => [d.ancienNumero, d.nouveauNumero]));
+  assert.equal(arrivee.get("03"), "00", "execute prend la première place");
+  assert.equal(arrivee.get("00"), "01");
+  assert.equal(arrivee.get("01"), "02");
+  assert.equal(arrivee.get("04"), "03");
+});
+
+test("un échange de deux étapes voisines ne perd aucun fichier", () => {
+  // Arrange — le cas qui casse une écriture naïve : 00 devient 01 pendant que
+  // 01 devient 00, donc les deux renommages se visent l'un l'autre.
+  const { skill, dossier, workflow } = atelierATrou();
+
+  // Act
+  appliquerRenumerotation(skill, workflow, undefined, ["01", "00", "03", "04"]);
+
+  // Assert
+  const restants = readdirSync(dossier).sort();
+  assert.equal(restants.length, 4, `un fichier a disparu : ${restants.join(", ")}`);
+  assert.ok(restants.some((f) => f.startsWith("step-00-plan")), "plan est passé en 00");
+  assert.ok(restants.some((f) => f.startsWith("step-01-init")), "init est passé en 01");
+});
+
+test("réordonner suit les renvois que les étapes se font", () => {
+  // Arrange
+  const { skill, dossier, workflow } = atelierATrou();
+
+  // Act
+  appliquerRenumerotation(skill, workflow, undefined, ["01", "00", "03", "04"]);
+
+  // Assert — `plan`, devenu 00, renvoyait à `execute` ; le renvoi doit suivre.
+  const contenu = readFileSync(join(dossier, "step-00-plan.md"), "utf8");
+  assert.match(contenu, /step-02-execute/, `renvoi non suivi :\n${contenu}`);
+});
+
+test("un ordre identique à l'existant est refusé : rien à faire", () => {
+  // Arrange — la numérotation a un trou, mais l'ordre demandé est celui-là.
+  const { skill, workflow } = atelierATrou();
+
+  // Act
+  const plan = planifierRenumerotation(skill, workflow, ["00", "01", "03", "04"]);
+
+  // Assert — refermer le trou reste un déplacement légitime : 03→02, 04→03.
+  assert.ok(plan.deplacements.length > 0, "le trou doit toujours se refermer");
 });
