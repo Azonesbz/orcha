@@ -21,7 +21,13 @@ import { join } from "node:path";
    confort : sans ça, `npm publish` diffuse les secrets du service. */
 const INTERDITS = [
   /^\.env/, /\.test\.[tj]s$/, /^\.git$/, /^\.claude$/, /^\.atelier-/,
-  /^__pycache__$/, /\.py$/,
+  /^__pycache__$/,
+  // Les tests Python partent ; `hook.py` et les trois modules qu'il importe
+  // RESTENT. Une purge de tous les `.py` retirait le hook de veille, alors que
+  // l'onglet Veille donne son chemin à coller dans settings.json : la commande
+  // pointait vers un fichier absent du paquet, et le hook échouait à chaque
+  // session sans que personne ne sache pourquoi.
+  /^test_.*\.py$/,
   // Les sources ne sont pas exécutées — le serveur autonome tourne sur les
   // chunks compilés. Les garder alourdit le paquet et laisse croire qu'on
   // distribue le dépôt.

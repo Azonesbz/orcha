@@ -1,3 +1,4 @@
+import { Silences } from "@/components/primitives";
 import type { Veille as EtatVeille } from "@/lib/lecture/veille";
 
 /**

@@ -85,3 +85,46 @@ test("des réglages sans hooks ne font pas tomber la lecture", () => {
   assert.equal(veille.installe, false);
   assert.equal(veille.autreHookPresent, false);
 });
+
+test("un `hooks` mal formé dit pourquoi, au lieu d'annoncer « pas installée »", () => {
+  // Arrange — la forme exacte du piège : le bloc collé un cran trop bas, si
+  // bien que `hooks` devient l'entrée elle-même au lieu du tableau d'événements.
+  reglagesJetables({
+    hooks: [{ type: "command", command: "python3 /ailleurs/hook.py", timeout: 10 }],
+  });
+
+  // Act
+  const veille = lireVeille();
+
+  // Assert
+  assert.equal(veille.installe, false);
+  assert.match(veille.raison, /tableau/i, "la cause doit nommer la forme trouvée");
+});
+
+test("un `hooks` bien formé ne porte aucune raison : le silence est la normale", () => {
+  // Arrange
+  reglagesJetables({
+    hooks: { SessionStart: [{ hooks: [{ type: "command", command: `python3 ${join(process.cwd(), "hook.py")}` }] }] },
+  });
+
+  // Act
+  const veille = lireVeille();
+
+  // Assert
+  assert.equal(veille.installe, true);
+  assert.equal(veille.raison, "");
+});
+
+test("un settings.json illisible se dit, plutôt que de passer pour un hook absent", () => {
+  // Arrange
+  const racine = mkdtempSync(join(tmpdir(), "veille-"));
+  process.env.CLAUDE_CONFIG_DIR = racine;
+  writeFileSync(join(racine, "settings.json"), "{ ceci n'est pas du JSON", "utf8");
+
+  // Act
+  const veille = lireVeille();
+
+  // Assert
+  assert.equal(veille.installe, false);
+  assert.match(veille.raison, /lire|JSON/i);
+});
