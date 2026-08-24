@@ -87,7 +87,10 @@ export function MiseEnRoute() {
           <p className="mt-3 max-w-prose text-sm text-muted">
             Rien à cloner, rien à configurer. La commande télécharge l&apos;outil, le démarre sur{" "}
             <code className="font-mono">127.0.0.1</code> et ouvre ton navigateur.{" "}
-            <strong className="text-ink-soft">Node 20 ou plus</strong> suffit.
+            <strong className="text-ink-soft">Node 20 ou plus</strong> suffit — l&apos;outil
+            entier tourne dessus. Seule la veille au démarrage, facultative, demande en plus un{" "}
+            <code className="font-mono">python3</code> : son hook est un script Python, et
+            l&apos;écran Veille dit s&apos;il est présent sur ta machine.
           </p>
           <p className="mt-2 max-w-prose text-sm text-muted">
             Le code est ouvert, sous licence MIT —{" "}

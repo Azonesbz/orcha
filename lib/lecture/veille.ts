@@ -11,38 +11,78 @@
  * settings.json cassé, et le verdict est le même que sur un fichier vierge.
  */
 
+import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { dossierDInstallation } from "../ecriture/veille.ts";
 import { lireTexte, racineUtilisateur } from "./fichiers.ts";
 
 const NOM_DU_HOOK = "hook.py";
 
 export interface Veille {
-  /** Le chemin absolu du hook sur cette machine. */
-  chemin: string;
-  /** Le bloc JSON à coller dans settings.json, prêt à l'emploi. */
+  /** Le hook livré avec le paquet : la source de la copie. */
+  cheminSource: string;
+  /** Où la copie vit, ou vivra — dans le dossier de l'utilisateur. */
+  cheminInstalle: string;
+  /** La copie est-elle sur le disque ? */
+  copieEnPlace: boolean;
+  /** Le paquet porte-t-il le hook à copier ? Faux = paquet incomplet. */
+  sourceDisponible: boolean;
+  /** Le bloc JSON à coller à la main, pour qui préfère. */
   bloc: string;
+  /** Un SessionStart déclare un hook.py. */
   installe: boolean;
+  /** ... mais pas la copie : un chemin de paquet périmé, par exemple. */
+  declareAilleurs: boolean;
   /** Un hook SessionStart est déclaré, mais il ne pointe pas sur celui-ci. */
   autreHookPresent: boolean;
+  /** Le hook est un script Python. La page publique promet que Node suffit. */
+  python: { present: boolean; version: string };
   /** Pourquoi la lecture n'a rien trouvé, quand ce n'est pas « rien n'y est ». */
   raison: string;
   fichierReglages: string;
 }
 
 export function lireVeille(): Veille {
-  const chemin = join(process.cwd(), NOM_DU_HOOK);
+  const cheminSource = join(process.cwd(), NOM_DU_HOOK);
+  const cheminInstalle = join(dossierDInstallation(), NOM_DU_HOOK);
   const fichierReglages = join(racineUtilisateur(), "settings.json");
   const { commandes, raison } = inspecter(fichierReglages);
-  const leNotre = commandes.some((c) => c.includes(NOM_DU_HOOK));
+  const declarees = commandes.filter((c) => c.includes(NOM_DU_HOOK));
 
   return {
-    chemin,
-    bloc: blocAColler(chemin),
-    installe: leNotre,
-    autreHookPresent: commandes.length > 0 && !leNotre,
+    cheminSource,
+    cheminInstalle,
+    copieEnPlace: existsSync(cheminInstalle),
+    sourceDisponible: existsSync(cheminSource),
+    bloc: blocAColler(cheminInstalle),
+    installe: declarees.length > 0,
+    declareAilleurs:
+      declarees.length > 0 && !declarees.some((c) => c.includes(cheminInstalle)),
+    autreHookPresent: commandes.length > 0 && declarees.length === 0,
+    python: versionDePython(),
     raison,
     fichierReglages,
   };
+}
+
+/**
+ * Y a-t-il un `python3` sur cette machine ?
+ *
+ * Constaté, jamais supposé : le hook est un script Python alors que l'outil se
+ * présente comme ne demandant que Node. Sans cette vérification, l'installation
+ * réussit et le hook échoue à chaque session — le silence exact qu'Orcha existe
+ * pour rompre.
+ */
+function versionDePython(): { present: boolean; version: string } {
+  try {
+    const essai = spawnSync("python3", ["--version"], { encoding: "utf8", timeout: 3000 });
+    const sortie = `${essai.stdout ?? ""}${essai.stderr ?? ""}`.trim();
+    if (essai.status === 0 && sortie !== "") return { present: true, version: sortie };
+  } catch {
+    // Un python3 absent lève selon la plateforme au lieu de rendre un statut.
+  }
+  return { present: false, version: "" };
 }
 
 interface Inspection {

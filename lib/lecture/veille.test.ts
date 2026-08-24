@@ -19,16 +19,18 @@ function reglagesJetables(contenu: unknown): string {
   return racine;
 }
 
-test("le bloc porte le chemin de la machine où l'outil tourne", () => {
-  // Arrange
-  reglagesJetables({});
+test("le bloc porte le chemin de la COPIE, dans le dossier de l'utilisateur", () => {
+  // Arrange — et non celui du paquet : un chemin de cache npx change à chaque
+  // mise à jour, et le hook déclaré cesse alors de se déclencher en silence.
+  const racine = reglagesJetables({});
 
   // Act
   const veille = lireVeille();
 
   // Assert
-  assert.equal(veille.chemin, join(process.cwd(), "hook.py"), "dérivé, jamais écrit");
-  assert.ok(veille.bloc.includes(veille.chemin));
+  assert.equal(veille.cheminInstalle, join(racine, "hooks", "orcha", "hook.py"));
+  assert.ok(veille.bloc.includes(veille.cheminInstalle), "dérivé, jamais écrit");
+  assert.ok(!veille.bloc.includes(process.cwd()), "le paquet n'a rien à faire dans le bloc");
 });
 
 test("la source ne contient aucun chemin absolu de développeur", () => {
@@ -127,4 +129,37 @@ test("un settings.json illisible se dit, plutôt que de passer pour un hook abse
   // Assert
   assert.equal(veille.installe, false);
   assert.match(veille.raison, /lire|JSON/i);
+});
+
+test("un hook déclaré ailleurs que sur la copie est distingué d'un hook en place", () => {
+  // Arrange — le cas du paquet npx : le chemin déclaré a existé, puis le cache
+  // a été vidé. Déclaré n'est pas installé, et ce n'est pas la même réparation.
+  reglagesJetables({
+    hooks: {
+      SessionStart: [
+        { hooks: [{ type: "command", command: "python3 /tmp/npx-perime/hook.py" }] },
+      ],
+    },
+  });
+
+  // Act
+  const veille = lireVeille();
+
+  // Assert
+  assert.equal(veille.installe, true, "une commande hook.py EST déclarée");
+  assert.equal(veille.declareAilleurs, true, "mais pas sur la copie de ~/.claude");
+  assert.equal(veille.copieEnPlace, false);
+});
+
+test("la présence de python3 est constatée, pas supposée", () => {
+  // Arrange — le hook est un script Python, et la page publique promet que Node
+  // suffit. L'écran doit donc dire ce qu'il en est sur CETTE machine.
+  reglagesJetables({});
+
+  // Act
+  const veille = lireVeille();
+
+  // Assert
+  assert.equal(typeof veille.python.present, "boolean");
+  if (veille.python.present) assert.match(veille.python.version, /^Python 3/);
 });

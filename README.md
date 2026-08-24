@@ -59,6 +59,9 @@ npx orcha-cli
 Rien à cloner, rien à configurer. La commande télécharge l'outil, le démarre
 sur `127.0.0.1` et ouvre le navigateur. Node 20 ou plus suffit.
 
+Seule exception : la **veille au démarrage** est un script Python, et demande donc
+un `python3` sur la machine. Elle est facultative, et l'écran Veille dit s'il est là.
+
 **Libre et gratuit, sous licence MIT.** Ni compte, ni paiement, ni télémétrie :
 l'outil lit ton disque et ne parle à personne.
 
