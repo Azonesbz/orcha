@@ -207,7 +207,7 @@ export function Agent() {
           <div className="relative shrink-0">
             <textarea
               name="instruction"
-              rows={3}
+              rows={1}
               value={instruction}
               onChange={(e) => setInstruction(e.target.value)}
               onKeyDown={(e) => {
@@ -221,13 +221,13 @@ export function Agent() {
               placeholder={
                 tours.length ? "Réponds, ou demande autre chose…" : "Ce que tu veux savoir, ou changer."
               }
-              className="field resize-none py-3 pr-14 text-note leading-[1.6]"
+              className="field block max-h-40 min-h-11 resize-none py-3 pr-14 text-note leading-[1.6]"
             />
             <button
               type="submit"
               disabled={enCours || instruction.trim() === ""}
               aria-label="Envoyer"
-              className="btn-primary absolute right-2.5 bottom-2.5 min-h-0 size-9 px-0"
+              className="btn-primary absolute top-1/2 right-2 min-h-0 size-9 -translate-y-1/2 px-0"
             >
               <Icone nom="envoyer" taille={16} trait={2} />
             </button>

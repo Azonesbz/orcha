@@ -68,12 +68,17 @@ function Bulle({ tour, session }: { tour: Tour; session: string }) {
     );
   }
 
+  // Pas de bulle autour d'une réponse : le fil a déjà son cadre, et une boîte
+  // dans une boîte alourdit la lecture. Seuls parlent en encadré celui qui
+  // écrit — bulle teintée — et l'échec, qui doit se voir.
   return (
     <div className="flex flex-col gap-2">
       <div
-        className={`rounded-carte border px-3.5 py-2.5 text-note leading-[1.7] whitespace-pre-wrap ${
-          tour.echec ? "border-danger/30 bg-danger-wash text-danger" : "border-line-soft text-ink-soft"
-        }`}
+        className={
+          tour.echec
+            ? "rounded-carte border border-danger/30 bg-danger-wash px-3.5 py-2.5 text-note leading-[1.7] whitespace-pre-wrap text-danger"
+            : "text-note leading-[1.7] whitespace-pre-wrap text-ink-soft"
+        }
       >
         {tour.texte}
       </div>
