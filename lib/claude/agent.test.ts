@@ -185,3 +185,40 @@ test("changer d'écran en cours de conversation rappelle le nouveau contexte", (
   assert.match(args[args.indexOf("-p") + 1], /Je regarde maintenant/);
   assert.match(args[args.indexOf("-p") + 1], /Séquence : 00, 01, 02/);
 });
+
+test("un mode est imposé : en `-p`, aucun humain ne peut répondre à une invite", () => {
+  // Arrange — sans mode, l'agent restait suspendu à la première écriture.
+  const contexte = CONTEXTE;
+
+  // Act
+  const args = argumentsDeLAgent(contexte, "Ajoute une étape", "claude-opus-5", SESSION, true);
+
+  // Assert
+  assert.equal(args.includes("--permission-mode"), true);
+});
+
+test("Bash et les outils réseau restent refusés en toutes circonstances", () => {
+  // Arrange — c'est ce refus, et non l'invite, qui borne désormais le
+  // périmètre. Une liste d'autorisés seule ne suffirait plus.
+  const contexte = CONTEXTE;
+
+  // Act
+  const args = argumentsDeLAgent(contexte, "Ajoute une étape", "claude-opus-5", SESSION, true);
+
+  // Assert
+  const refuses = args[args.indexOf("--disallowedTools") + 1];
+  assert.match(refuses, /Bash/);
+  assert.match(refuses, /WebFetch/);
+  assert.match(refuses, /Task/);
+});
+
+test("le dossier reste borné, quel que soit le mode", () => {
+  // Arrange
+  const contexte = CONTEXTE;
+
+  // Act
+  const args = argumentsDeLAgent(contexte, "Ajoute une étape", "claude-opus-5", SESSION, true);
+
+  // Assert
+  assert.equal(args[args.indexOf("--add-dir") + 1], CONTEXTE.dossier);
+});

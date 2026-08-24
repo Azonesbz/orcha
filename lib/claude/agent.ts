@@ -21,6 +21,16 @@ import { cliDisponible, enClair, PropositionRefusee, refuserSiSessionMorte } fro
 const LECTURE = "Read,Glob,Grep";
 const ECRITURE = `${LECTURE},Edit,Write`;
 
+/**
+ * Ce qui reste refusé quoi qu'il arrive.
+ *
+ * Une liste d'autorisés ne suffit plus dès lors que les demandes d'approbation
+ * sont levées : rien ne garantit que le mode la respecte. Un refus explicite,
+ * lui, se lit dans les deux sens. Bash sortirait du périmètre en une commande,
+ * et les outils réseau n'ont rien à faire dans l'inspection d'un dossier local.
+ */
+const REFUSES = "Bash,Task,WebFetch,WebSearch,NotebookEdit";
+
 const DOCTRINE = [
   "Tu assistes depuis Orcha, un outil qui montre ce qu'un dossier .claude déclare",
   "et ce qui charge vraiment. Réponds en français, brièvement.",
@@ -59,6 +69,12 @@ export function argumentsDeLAgent(
     "--model", modele,
     "--add-dir", contexte.dossier,
     "--allowedTools", contexte.peutEcrire ? ECRITURE : LECTURE,
+    "--disallowedTools", REFUSES,
+    // En mode `-p`, aucun humain n'est là pour répondre à une demande
+    // d'approbation : l'agent restait bloqué à la première écriture. Ce qui
+    // borne les dégâts n'est donc plus l'invite, mais `--add-dir` et les deux
+    // listes d'outils ci-dessus.
+    "--permission-mode", "bypassPermissions",
     "--output-format", "text",
   ];
 
