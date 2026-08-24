@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { usePathname } from "next/navigation";
 import { Icone } from "@/components/icones";
 import { Fil, type Tour } from "@/components/agent/Fil";
@@ -149,8 +150,16 @@ export function Agent() {
           action={(donnees) => {
             const dit = String(donnees.get("instruction") ?? "").trim();
             if (!dit) return;
-            setTours((f) => [...f, { qui: "moi", texte: dit }]);
-            setInstruction("");
+            /* `flushSync` : sans lui, ces deux mises à jour partent dans la
+               transition ouverte par l'action et ne s'affichent qu'au retour de
+               l'agent. Pendant les dix ou vingt secondes d'attente, le message
+               restait dans le champ, absent du fil, suggestions toujours là —
+               on croyait que l'envoi avait échoué. Elles doivent être peintes
+               AVANT que la transition ne commence. */
+            flushSync(() => {
+              setTours((f) => [...f, { qui: "moi", texte: dit }]);
+              setInstruction("");
+            });
             cheminDitALAgent.current = chemin;
             action(donnees);
           }}
