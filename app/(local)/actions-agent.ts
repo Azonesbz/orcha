@@ -3,7 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { contexteDe } from "@/lib/agent/contexte";
-import { prendreInstantane, restaurer } from "@/lib/agent/instantane";
+import { prendreInstantane } from "@/lib/agent/instantane";
 import { demanderALAgent } from "@/lib/claude/agent";
 import { ecritureOuverte } from "@/lib/acces/etat";
 import { lireConfig } from "@/lib/reglages/config";
@@ -83,26 +83,8 @@ export async function demander(_precedent: RetourAgent, donnees: FormData): Prom
   }
 }
 
-/** Le retour arrière — le filet, puisqu'il n'y a pas eu de relecture. */
-export async function annuler(_precedent: RetourAgent, donnees: FormData): Promise<RetourAgent> {
-  const id = String(donnees.get("instantane") ?? "");
-  try {
-    const remis = restaurer(id);
-    revalidatePath("/", "layout");
-    return {
-      etat: "repondu",
-      texte: `Revenu à l'état d'avant : ${remis.dossier}`,
-      instantane: "",
-      dossier: remis.dossier,
-      session: String(donnees.get("session") ?? ""),
-    };
-  } catch (erreur) {
-    return {
-      etat: "refuse",
-      texte: erreur instanceof Error ? erreur.message : "Restauration impossible.",
-      instantane: id,
-      dossier: "",
-      session: String(donnees.get("session") ?? ""),
-    };
-  }
-}
+/* Le retour arrière n'a plus de bouton : l'encart par tour alourdissait le fil.
+   L'instantané, lui, est toujours pris avant chaque écriture — la capacité
+   reste entière, seule sa surface a disparu. Pour revenir en arrière :
+   `restaurer(id)` de lib/agent/instantane.ts, ou à la main depuis
+   ~/.orcha/instantanes/<id>/contenu. */

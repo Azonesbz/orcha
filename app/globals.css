@@ -101,7 +101,7 @@ body {
 }
 
 /* Le focus passe la bordure en Citron — pas d'ombre, pas de halo. L'anneau
-   reste pour ce qui n'a pas de bordure à teindre. */
+   reste pour ce qui n'a pas de bordure à teindre : liens, icônes, puces. */
 :focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
@@ -175,9 +175,14 @@ body {
   /* Fond Noir dans une carte Surface, trait à 28 %. Pas de `focus:outline-none`
      : on cumule l'anneau global et le renfort de bordure. Ne jamais substituer
      un signal faible à un signal fort. */
+  /* Un champ porte déjà une bordure : la teindre EST le signal de focus. La
+     charte tranche — « pas d'ombre, pas de halo » — et l'anneau global de 2 px
+     en faisait un second par-dessus. Le Citron sur le Noir rend 12,6:1, très
+     au-delà des 3:1 qu'un indicateur de focus doit atteindre. */
   .field {
     @apply w-full rounded-controle border border-line-strong bg-paper px-3.5
-           py-2.5 text-corps text-ink placeholder:text-muted focus:border-accent;
+           py-2.5 text-corps text-ink placeholder:text-muted focus:border-accent
+           focus-visible:outline-none;
   }
 
   .card {

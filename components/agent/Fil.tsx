@@ -1,7 +1,5 @@
 "use client";
 
-import { useActionState } from "react";
-import { Icone } from "@/components/icones";
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -10,8 +8,6 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller";
-import { annuler, type RetourAgent } from "@/app/(local)/actions-agent";
-
 export interface Tour {
   qui: "moi" | "agent";
   texte: string;
@@ -20,8 +16,6 @@ export interface Tour {
   instantane?: string;
   dossier?: string;
 }
-
-const VIERGE: RetourAgent = { etat: "vierge", texte: "", instantane: "", dossier: "", session: "" };
 
 /**
  * Le fil de la discussion.
@@ -38,17 +32,17 @@ const VIERGE: RetourAgent = { etat: "vierge", texte: "", instantane: "", dossier
  * Chaque tour de l'agent garde SON instantané : revenir en arrière depuis le
  * troisième tour ne doit pas défaire le premier.
  */
-export function Fil({ tours, session }: { tours: Tour[]; session: string }) {
+export function Fil({ tours }: { tours: Tour[] }) {
   if (tours.length === 0) return <div className="min-h-0 flex-1" />;
 
   return (
     <MessageScrollerProvider autoScroll defaultScrollPosition="end" scrollPreviousItemPeek={24}>
-      <MessageScroller className="min-h-0 flex-1 rounded-carte border border-line">
-        <MessageScrollerViewport className="p-4">
+      <MessageScroller className="min-h-0 flex-1">
+        <MessageScrollerViewport className="py-2">
           <MessageScrollerContent className="gap-4">
             {tours.map((tour, i) => (
               <MessageScrollerItem key={i} messageId={String(i)} scrollAnchor={tour.qui === "moi"}>
-                <Bulle tour={tour} session={session} />
+                <Bulle tour={tour} />
               </MessageScrollerItem>
             ))}
           </MessageScrollerContent>
@@ -59,7 +53,7 @@ export function Fil({ tours, session }: { tours: Tour[]; session: string }) {
   );
 }
 
-function Bulle({ tour, session }: { tour: Tour; session: string }) {
+function Bulle({ tour }: { tour: Tour }) {
   if (tour.qui === "moi") {
     return (
       <p className="ml-auto w-fit max-w-[80%] rounded-carte bg-accent-wash px-3.5 py-2.5 text-note whitespace-pre-wrap">
@@ -82,46 +76,6 @@ function Bulle({ tour, session }: { tour: Tour; session: string }) {
       >
         {tour.texte}
       </div>
-      {tour.instantane && (
-        <Retour instantane={tour.instantane} dossier={tour.dossier ?? ""} session={session} />
-      )}
-    </div>
-  );
-}
-
-/** Le filet, puisque l'agent a écrit sans relecture préalable. */
-function Retour({
-  instantane,
-  dossier,
-  session,
-}: {
-  instantane: string;
-  dossier: string;
-  session: string;
-}) {
-  const [remis, action, enCours] = useActionState(annuler, VIERGE);
-  if (remis.etat === "repondu") {
-    return <p className="font-mono text-meta text-accent-soft">{remis.texte}</p>;
-  }
-
-  return (
-    <div className="flex flex-wrap items-center gap-3">
-      <button
-        type="submit"
-        formAction={action}
-        name="instantane"
-        value={instantane}
-        disabled={enCours}
-        className="btn-secondary min-h-0 px-3 py-1.5 text-description"
-      >
-        <Icone nom="retour" taille={13} />
-        {enCours ? "restauration…" : "revenir à l'état d'avant ce tour"}
-      </button>
-      <input type="hidden" name="session" value={session} />
-      <span className="font-mono text-meta text-muted">{dossier}</span>
-      {remis.etat === "refuse" && (
-        <span className="font-mono text-meta text-danger">{remis.texte}</span>
-      )}
     </div>
   );
 }

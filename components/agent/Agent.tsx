@@ -132,7 +132,7 @@ export function Agent() {
               }}
               className="shrink-0 font-mono text-meta text-muted underline underline-offset-[3px] hover:text-ink"
             >
-              repartir de zéro
+              nouveau chat
             </button>
           )}
           <button
@@ -173,7 +173,7 @@ export function Agent() {
             </p>
           )}
 
-          <Fil tours={tours} session={session} />
+          <Fil tours={tours} />
 
           {tours.length === 0 && contexte && (
             <div className="flex shrink-0 flex-wrap gap-2">
