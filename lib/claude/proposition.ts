@@ -10,6 +10,8 @@
  * l'écriture demande un geste explicite, et passe par `enregistrerCompetence`.
  */
 
+import { execFile, spawnSync } from "node:child_process";
+import { promisify } from "node:util";
 import Anthropic from "@anthropic-ai/sdk";
 import { lireConfig } from "../reglages/config.ts";
 import type { Modele } from "../reglages/modeles.ts";
@@ -41,16 +43,30 @@ const CONSIGNE = [
   "— N'écris pas le frontmatter : il commence au premier `#` ou `##`.",
 ].join("\n");
 
+/**
+ * Le CLI `claude` est-il installé ?
+ *
+ * Résolu une fois par processus : c'est un lancement de sous-processus, et la
+ * réponse ne change pas en cours de session.
+ */
+let cliVue: boolean | null = null;
+export function cliDisponible(): boolean {
+  if (cliVue === null) {
+    cliVue = spawnSync("claude", ["--version"], { timeout: 5000 }).status === 0;
+  }
+  return cliVue;
+}
+
 export async function demanderProposition(demande: DemandeDeProposition): Promise<string> {
   const config = lireConfig();
-  if (config.cleApi === "") {
-    throw new PropositionRefusee(
-      "Aucune clé d'API n'est enregistrée. Ajoute-la dans Réglages pour activer le panneau Claude.",
-    );
-  }
   if (demande.instruction.trim() === "") {
     throw new PropositionRefusee("Décris le changement voulu avant de demander une proposition.");
   }
+
+  // Sans clé d'API, on passe par le CLI `claude` — donc par l'abonnement de la
+  // machine, et non par une facturation à l'usage. Une clé enregistrée veut
+  // dire qu'on la veut : elle gagne.
+  if (config.cleApi === "") return parLeCli(demande);
 
   const client = new Anthropic({ apiKey: config.cleApi });
   try {
@@ -63,6 +79,47 @@ export async function demanderProposition(demande: DemandeDeProposition): Promis
     });
     return sansCloture(texteDe(reponse));
   } catch (erreur) {
+    throw new PropositionRefusee(enClair(erreur));
+  }
+}
+
+const lancer = promisify(execFile);
+
+/**
+ * La même demande, passée au CLI `claude` en mode impression.
+ *
+ * Les outils sont coupés : on veut un texte, pas un agent qui irait lire ou
+ * écrire des fichiers de son côté — l'écriture reste le geste « Appliquer ».
+ */
+async function parLeCli(demande: DemandeDeProposition): Promise<string> {
+  if (!cliDisponible()) {
+    throw new PropositionRefusee(
+      "Ni clé d'API dans Réglages, ni commande « claude » sur cette machine. " +
+        "Installe Claude Code, ou renseigne une clé.",
+    );
+  }
+
+  try {
+    const { stdout } = await lancer(
+      "claude",
+      [
+        "-p", enonce(demande),
+        "--model", demande.modele ?? lireConfig().modele,
+        "--append-system-prompt", CONSIGNE,
+        "--disallowedTools", "Bash,Edit,Write,Read,Glob,Grep,WebFetch,WebSearch,Task",
+      ],
+      // ponytail: le corps passe en argument, pas par stdin — un SKILL.md pèse
+      // quelques kilo-octets, loin de la limite d'argv. Passer à spawn+stdin si
+      // un fichier énorme apparaît un jour.
+      { maxBuffer: 8 * 1024 * 1024, timeout: 180_000 },
+    );
+    refuserSiSessionMorte(stdout);
+    if (stdout.trim() === "") {
+      throw new PropositionRefusee("Le CLI « claude » n'a rien rendu. Vérifie `claude -p` en terminal.");
+    }
+    return sansCloture(stdout);
+  } catch (erreur) {
+    if (erreur instanceof PropositionRefusee) throw erreur;
     throw new PropositionRefusee(enClair(erreur));
   }
 }
@@ -105,8 +162,28 @@ function sansCloture(texte: string): string {
   return `${(cloture ? cloture[1] : texte).trim()}\n`;
 }
 
-function enClair(erreur: unknown): string {
+/**
+ * Le CLI signale une session morte sur STDOUT, avec un code de retour 0.
+ *
+ * Sans ce contrôle, « Failed to authenticate » s'affiche comme si c'était la
+ * réponse du modèle — un échec déguisé en résultat, exactement ce qu'Orcha
+ * existe pour empêcher.
+ */
+export function refuserSiSessionMorte(sortie: string): void {
+  if (/^Failed to authenticate/im.test(sortie)) {
+    throw new PropositionRefusee(
+      "Session Claude Code expirée. Lance `claude` une fois en terminal pour te reconnecter.",
+    );
+  }
+}
+
+export function enClair(erreur: unknown): string {
   if (erreur instanceof PropositionRefusee) return erreur.message;
+  // Le CLI rend ça sur stdout ET en message d'erreur selon le chemin : le test
+  // porte donc sur le texte, pas sur le type.
+  if (erreur instanceof Error && /authenticate|OAuth/i.test(erreur.message)) {
+    return "Session Claude Code expirée. Lance `claude` une fois en terminal pour te reconnecter.";
+  }
   if (erreur instanceof Anthropic.AuthenticationError) {
     return "Clé d'API refusée par Anthropic. Vérifie-la dans Réglages.";
   }

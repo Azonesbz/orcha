@@ -85,8 +85,8 @@ export function PanneauModifier({
 
       <p className="font-mono text-etiquette text-faint">
         {cleConfiguree
-          ? "rien n'est écrit sans Appliquer · clé API : Réglages"
-          : "aucune clé d'API — à ajouter dans Réglages pour activer ce panneau"}
+          ? "rien n'est écrit sans Appliquer · sans clé d'API, passe par ton abonnement Claude Code"
+          : "ni clé d'API ni commande « claude » — voir Réglages"}
       </p>
     </div>
   );

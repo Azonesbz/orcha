@@ -38,14 +38,16 @@ export function PanneauClaude({
           <span className="text-module font-semibold">Claude</span>
         </div>
         <p className="mt-1.5 text-description text-muted">
-          Utilisé par « Modifier avec Claude ». La clé reste sur cette machine et ne part que vers
-          l&apos;API Anthropic.
+          Utilisé par « Modifier avec Claude ». <strong className="text-ink">Facultatif</strong> :
+          sans clé, Orcha passe par la commande <code className="font-mono">claude</code> de cette
+          machine, donc par ton abonnement Claude Code. Une clé enregistrée gagne, et facture à
+          l&apos;usage.
         </p>
       </div>
 
       <Champ
         etiquette="Clé API"
-        aide="Créée sur console.anthropic.com. Laisser vide pour ne pas toucher à celle en place."
+        aide="Créée sur console.anthropic.com. Vide = on utilise ton abonnement Claude Code."
       >
         <div className="flex gap-2.5">
           <input

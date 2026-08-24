@@ -11,6 +11,7 @@ import { verifierCheminAgent } from "@/lib/ecriture/agent";
 import { lireAtelier } from "@/lib/lecture/atelier";
 import { MODELE_DE_SESSION, OUTILS_HERITES } from "@/lib/lecture/documents";
 import { lireTexte } from "@/lib/lecture/fichiers";
+import { cliDisponible } from "@/lib/claude/proposition";
 import { lireConfig } from "@/lib/reglages/config";
 
 export const dynamic = "force-dynamic";
@@ -75,7 +76,7 @@ export default async function Detail({
           </>
         }
         modele={config.modele}
-        cleConfiguree={config.cleApi !== ""}
+        cleConfiguree={config.cleApi !== "" || cliDisponible()}
         refus={refus}
       />
     </main>

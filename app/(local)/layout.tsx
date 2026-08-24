@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Agent } from "@/components/agent/Agent";
 import { Rail } from "@/components/Rail";
 import { estPublic } from "@/lib/acces/role";
 import { piedDeRail } from "@/lib/chrome/pied";
@@ -29,6 +30,8 @@ export default function CoquilleLocale({ children }: { children: React.ReactNode
         <div className="relative z-10 mx-auto max-w-[100rem] px-6 py-8 sm:px-12 sm:py-11">
           {children}
         </div>
+        {/* Un seul point d'appel : l'agent déduit son contexte de la route. */}
+        <Agent />
       </div>
     </div>
   );

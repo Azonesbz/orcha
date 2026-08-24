@@ -9,6 +9,7 @@ import { verifierChemin } from "@/lib/ecriture/competence";
 import { ecritureOuverte } from "@/lib/acces/etat";
 import { lireAtelier } from "@/lib/lecture/atelier";
 import { lireTexte } from "@/lib/lecture/fichiers";
+import { cliDisponible } from "@/lib/claude/proposition";
 import { lireConfig } from "@/lib/reglages/config";
 
 export const dynamic = "force-dynamic";
@@ -70,7 +71,7 @@ export default async function Detail({
           />
         }
         modele={config.modele}
-        cleConfiguree={config.cleApi !== ""}
+        cleConfiguree={config.cleApi !== "" || cliDisponible()}
         refus={refus}
       />
     </main>

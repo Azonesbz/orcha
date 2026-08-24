@@ -10,6 +10,7 @@ import { verifierCheminEtape } from "@/lib/ecriture/etape";
 import { lireAtelier } from "@/lib/lecture/atelier";
 import { lireTexte } from "@/lib/lecture/fichiers";
 import { lireWorkflow } from "@/lib/lecture/workflow";
+import { cliDisponible } from "@/lib/claude/proposition";
 import { lireConfig } from "@/lib/reglages/config";
 import type { Competence } from "@/lib/types";
 
@@ -77,7 +78,7 @@ export default async function Etape({
         action={agir}
         modulesFixes={null}
         modele={config.modele}
-        cleConfiguree={config.cleApi !== ""}
+        cleConfiguree={config.cleApi !== "" || cliDisponible()}
         refus={refus}
       />
     </main>
