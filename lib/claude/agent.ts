@@ -39,15 +39,35 @@ const DOCTRINE = [
   "pour le plaisir de le réécrire.",
 ].join("\n");
 
-/** Construit la ligne de commande. Séparé de l'exécution pour être testable. */
-export function argumentsDeLAgent(contexte: Contexte, instruction: string, modele: Modele | string): string[] {
-  return [
-    "-p", `${instruction.trim()}\n\n--- Contexte : ${contexte.titre} ---\n${contexte.resume}`,
+/**
+ * Construit la ligne de commande. Séparé de l'exécution pour être testable.
+ *
+ * C'est le CLI qui tient la conversation, pas Orcha : le premier tour ouvre une
+ * session et lui donne le contexte de l'écran, les suivants la reprennent et
+ * n'envoient que la question. Renvoyer le contexte à chaque tour gonflerait
+ * l'invite et ferait relire à l'agent ce qu'il sait déjà.
+ */
+export function argumentsDeLAgent(
+  contexte: Contexte,
+  instruction: string,
+  modele: Modele | string,
+  session: string,
+  ouverture: boolean,
+): string[] {
+  const commun = [
     "--model", modele,
     "--add-dir", contexte.dossier,
     "--allowedTools", contexte.peutEcrire ? ECRITURE : LECTURE,
-    "--append-system-prompt", DOCTRINE,
     "--output-format", "text",
+  ];
+
+  if (!ouverture) return ["-p", instruction.trim(), "--resume", session, ...commun];
+
+  return [
+    "-p", `${instruction.trim()}\n\n--- Contexte : ${contexte.titre} ---\n${contexte.resume}`,
+    "--session-id", session,
+    "--append-system-prompt", DOCTRINE,
+    ...commun,
   ];
 }
 
@@ -55,6 +75,8 @@ export async function demanderALAgent(
   contexte: Contexte,
   instruction: string,
   modele: Modele | string,
+  session: string,
+  ouverture: boolean,
 ): Promise<string> {
   if (instruction.trim() === "") {
     throw new PropositionRefusee("Écris ta demande avant de lancer l'agent.");
@@ -68,7 +90,7 @@ export async function demanderALAgent(
 
   try {
     const sortie = await lancerClaude({
-      args: argumentsDeLAgent(contexte, instruction, modele),
+      args: argumentsDeLAgent(contexte, instruction, modele, session, ouverture),
       cwd: contexte.dossier,
       delai: 600_000,
     });

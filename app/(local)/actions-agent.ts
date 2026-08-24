@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { contexteDe } from "@/lib/agent/contexte";
 import { prendreInstantane, restaurer } from "@/lib/agent/instantane";
@@ -32,12 +33,18 @@ export interface RetourAgent {
   instantane: string;
   /** Ce que l'instantané couvre, pour le dire à l'utilisateur. */
   dossier: string;
+  /** La conversation en cours. C'est le CLI qui la tient, pas Orcha. */
+  session: string;
 }
 
 export async function demander(_precedent: RetourAgent, donnees: FormData): Promise<RetourAgent> {
   const chemin = String(donnees.get("chemin") ?? "/");
   const instruction = String(donnees.get("instruction") ?? "");
   const contexte = contexteDe(chemin);
+
+  // Session vide = premier tour : on l'ouvre et on donne le contexte de l'écran.
+  const recue = String(donnees.get("session") ?? "");
+  const session = recue || randomUUID();
   const ecrit = contexte.peutEcrire && (await ecritureOuverte());
 
   // L'instantané se prend AVANT l'appel : après, il ne servirait plus à rien.
@@ -54,15 +61,19 @@ export async function demander(_precedent: RetourAgent, donnees: FormData): Prom
       { ...contexte, peutEcrire: ecrit },
       instruction,
       lireConfig().modele,
+      session,
+      recue === "",
     );
     revalidatePath("/", "layout");
-    return { etat: "repondu", texte, instantane, dossier: contexte.dossier };
+    return { etat: "repondu", texte, instantane, dossier: contexte.dossier, session };
   } catch (erreur) {
     return {
       etat: "refuse",
       texte: erreur instanceof Error ? erreur.message : "L'agent a échoué.",
       instantane,
       dossier: contexte.dossier,
+      // La session reste : une erreur réseau ne doit pas perdre l'historique.
+      session,
     };
   }
 }
@@ -78,6 +89,7 @@ export async function annuler(_precedent: RetourAgent, donnees: FormData): Promi
       texte: `Revenu à l'état d'avant : ${remis.dossier}`,
       instantane: "",
       dossier: remis.dossier,
+      session: String(donnees.get("session") ?? ""),
     };
   } catch (erreur) {
     return {
@@ -85,6 +97,7 @@ export async function annuler(_precedent: RetourAgent, donnees: FormData): Promi
       texte: erreur instanceof Error ? erreur.message : "Restauration impossible.",
       instantane: id,
       dossier: "",
+      session: String(donnees.get("session") ?? ""),
     };
   }
 }

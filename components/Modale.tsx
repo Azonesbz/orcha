@@ -14,12 +14,15 @@ export function Modale({
   titre,
   aide,
   onFermer,
+  large,
   children,
 }: {
   ouverte: boolean;
   titre: string;
   aide: string;
   onFermer: () => void;
+  /** Une conversation ne tient pas dans la largeur d'un formulaire. */
+  large?: boolean;
   children: React.ReactNode;
 }) {
   const dialogue = useRef<HTMLDialogElement>(null);
@@ -44,7 +47,9 @@ export function Modale({
       /* `inset-0` + `m-auto` + `h-fit` : la préflight de Tailwind supprime la
          marge automatique que l'agent utilisateur pose sur un dialogue modal,
          et il retombait en bas de l'écran. */
-      className="card fixed inset-0 m-auto h-fit max-h-[calc(100vh-4rem)] w-[min(32rem,calc(100vw-2rem))] overflow-y-auto p-0 text-ink"
+      className={`card fixed inset-0 m-auto h-fit max-h-[calc(100vh-4rem)] overflow-y-auto p-0 text-ink ${
+        large ? "w-[min(46rem,calc(100vw-2rem))]" : "w-[min(32rem,calc(100vw-2rem))]"
+      }`}
     >
       <div className="border-b border-line px-5 py-4">
         <div className="flex items-baseline justify-between gap-4">

@@ -1,38 +1,66 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Icone } from "@/components/icones";
 import { Modale } from "@/components/Modale";
+import { Fil, type Tour } from "@/components/agent/Fil";
 import {
-  annuler,
   demander,
   lireContexte,
   type ApercuContexte,
   type RetourAgent,
 } from "@/app/(local)/actions-agent";
 
-const VIERGE: RetourAgent = { etat: "vierge", texte: "", instantane: "", dossier: "" };
+const VIERGE: RetourAgent = { etat: "vierge", texte: "", instantane: "", dossier: "", session: "" };
 
 /**
- * L'agent, sur tous les écrans.
+ * L'agent, sur tous les écrans — et en conversation.
  *
  * Il déduit son contexte de la route plutôt que de le recevoir en props : la
  * coquille ne peut pas connaître le contexte des pages, et le recalculer côté
- * serveur évite de faire voyager un inventaire — ou un fichier entier — jusqu'au
- * navigateur pour le renvoyer aussitôt.
+ * serveur évite de faire voyager un fichier entier jusqu'au navigateur pour le
+ * renvoyer aussitôt.
+ *
+ * L'historique n'est stocké nulle part ici : c'est le CLI qui tient la
+ * conversation, par son identifiant de session. Le fil affiché n'est que le
+ * reflet de ce qui a été dit.
  */
 export function Agent() {
   const chemin = usePathname();
   const [ouvert, setOuvert] = useState(false);
   const [contexte, setContexte] = useState<ApercuContexte | null>(null);
   const [instruction, setInstruction] = useState("");
+  const [fil, setFil] = useState<Tour[]>([]);
   const [retour, action, enCours] = useActionState(demander, VIERGE);
+  const dernier = useRef("");
 
-  // Le contexte se relit à chaque ouverture : l'écran a pu changer entre deux.
   useEffect(() => {
     if (ouvert) lireContexte(chemin).then(setContexte);
   }, [ouvert, chemin]);
+
+  // Changer d'écran change le contexte : la conversation d'avant ne le suit pas.
+  useEffect(() => {
+    setFil([]);
+    dernier.current = "";
+  }, [chemin]);
+
+  // Le retour d'action arrive hors du fil : on l'y verse une fois, et une seule.
+  useEffect(() => {
+    const cle = `${retour.session}:${retour.texte}`;
+    if (retour.etat === "vierge" || cle === dernier.current) return;
+    dernier.current = cle;
+    setFil((f) => [
+      ...f,
+      {
+        qui: "agent",
+        texte: retour.texte,
+        echec: retour.etat === "refuse",
+        instantane: retour.instantane,
+        dossier: retour.dossier,
+      },
+    ]);
+  }, [retour]);
 
   return (
     <>
@@ -48,11 +76,21 @@ export function Agent() {
       <Modale
         ouverte={ouvert}
         onFermer={() => setOuvert(false)}
+        large
         titre="Ask agent"
         aide={contexte ? `Il regarde : ${contexte.titre}` : "Lecture du contexte…"}
       >
-        <form action={action} className="flex flex-col gap-3">
+        <form
+          action={(donnees) => {
+            const dit = String(donnees.get("instruction") ?? "").trim();
+            if (dit) setFil((f) => [...f, { qui: "moi", texte: dit }]);
+            setInstruction("");
+            action(donnees);
+          }}
+          className="flex flex-col gap-3"
+        >
           <input type="hidden" name="chemin" value={chemin} />
+          <input type="hidden" name="session" value={retour.session} />
 
           {contexte && !contexte.peutEcrire && (
             <p className="rounded-controle border border-line-soft px-3 py-2 font-mono text-meta text-muted">
@@ -60,7 +98,9 @@ export function Agent() {
             </p>
           )}
 
-          {contexte && contexte.suggestions.length > 0 && (
+          <Fil tours={fil} enCours={enCours} session={retour.session} />
+
+          {fil.length === 0 && contexte && (
             <div className="flex flex-wrap gap-2">
               {contexte.suggestions.map((s) => (
                 <button
@@ -77,17 +117,17 @@ export function Agent() {
 
           <textarea
             name="instruction"
-            rows={3}
+            rows={2}
             value={instruction}
             onChange={(e) => setInstruction(e.target.value)}
-            placeholder="Décris ce que tu veux savoir, ou ce qu'il faut changer."
+            placeholder={fil.length ? "Continue la discussion…" : "Ce que tu veux savoir, ou changer."}
             className="field resize-y text-note leading-[1.6]"
           />
 
           <div className="flex items-center gap-3">
             <button type="submit" disabled={enCours} className="btn-primary">
               <Icone nom="proposer" taille={14} />
-              {enCours ? "L'agent travaille…" : "Demander"}
+              {enCours ? "L'agent réfléchit…" : fil.length ? "Envoyer" : "Demander"}
             </button>
             {contexte?.peutEcrire && (
               <span className="font-mono text-meta text-muted">
@@ -95,46 +135,8 @@ export function Agent() {
               </span>
             )}
           </div>
-
-          {retour.etat !== "vierge" && <Reponse retour={retour} />}
         </form>
       </Modale>
-    </>
-  );
-}
-
-function Reponse({ retour }: { retour: RetourAgent }) {
-  const [remis, action] = useActionState(annuler, VIERGE);
-  const instantane = remis.etat === "vierge" ? retour.instantane : "";
-
-  return (
-    <>
-      <pre
-        className={`max-h-80 overflow-auto rounded-controle border px-3.5 py-3 font-mono text-meta leading-[1.7] break-words whitespace-pre-wrap ${
-          retour.etat === "refuse"
-            ? "border-danger/30 bg-danger-wash text-danger"
-            : "border-line bg-paper text-ink-soft"
-        }`}
-      >
-        {remis.texte || retour.texte}
-      </pre>
-
-      {/* Le filet : l'agent a écrit sans relecture, on garde le chemin du retour. */}
-      {instantane && (
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="submit"
-            formAction={action}
-            name="instantane"
-            value={instantane}
-            className="btn-secondary min-h-0 px-3.5 py-2 text-description"
-          >
-            <Icone nom="retour" taille={13} />
-            revenir à l&apos;état d&apos;avant
-          </button>
-          <span className="font-mono text-meta text-muted">{retour.dossier}</span>
-        </div>
-      )}
     </>
   );
 }
