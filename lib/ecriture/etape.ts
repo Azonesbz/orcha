@@ -14,6 +14,38 @@ import type { Workflow } from "../lecture/workflow.ts";
 import { cheminModifiable, doitEtreLibre, EcritureRefusee, ecrireAtomiquement, enSlug } from "./garde.ts";
 import { DIVERGENCE, empreinteDeFichiers } from "./empreinte.ts";
 
+/**
+ * Réécrit un fichier d'étape, en entier.
+ *
+ * Contrairement à une compétence ou à un agent, une étape n'a pas de
+ * frontmatter à préserver : c'est du markdown nu, et le corps EST le fichier.
+ * D'où une écriture franche plutôt qu'un `remplacerCorps`, qui exigerait un
+ * en-tête délimité par `---` et refuserait tout fichier d'étape normal.
+ */
+export function enregistrerEtape(chemin: string, modification: { corps: string }): void {
+  ecrireAtomiquement(verifierCheminEtape(chemin), modification.corps);
+}
+
+/** Le garde partagé, plus les deux règles propres aux étapes. */
+export function verifierCheminEtape(chemin: string): string {
+  const absolu = cheminModifiable(chemin);
+  if (!absolu.endsWith(".md")) {
+    throw new EcritureRefusee("Une étape est un fichier Markdown.");
+  }
+  // Le SKILL.md et les agents ont leur propre écran, et un frontmatter que
+  // cette écriture-ci écraserait sans le voir.
+  if (absolu.endsWith("/SKILL.md")) {
+    throw new EcritureRefusee(
+      "Un SKILL.md se modifie depuis l'écran de la compétence : il porte un frontmatter " +
+        "que cette écriture écraserait.",
+    );
+  }
+  if (/\/agents\/[^/]+\.md$/.test(absolu)) {
+    throw new EcritureRefusee("Un agent se modifie depuis son propre écran.");
+  }
+  return absolu;
+}
+
 export interface Convention {
   /** `steps` chez halo, `etapes` chez lancer. */
   dossier: string;

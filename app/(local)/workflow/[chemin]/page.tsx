@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Icone } from "@/components/icones";
+import { versLEditeur } from "@/lib/chrome/retour";
 import { notFound } from "next/navigation";
 import { PlanWorkflow } from "@/components/PlanWorkflow";
 import { AtelierWorkflow } from "./Atelier";
@@ -83,7 +84,7 @@ export default async function VueWorkflow({ params }: { params: Promise<{ chemin
         numerotationATrou={numerotationATrou}
       />
 
-      <PlanWorkflow workflow={workflow} />
+      <PlanWorkflow workflow={workflow} destinations={destinations(atelier, workflow, competence.chemin)} />
 
       <p className="mt-5 font-mono text-meta text-muted">
         trait plein : l&apos;étape nomme elle-même la suivante · trait pointillé : ordre du
@@ -109,6 +110,42 @@ export default async function VueWorkflow({ params }: { params: Promise<{ chemin
       )}
     </main>
   );
+}
+
+/**
+ * Où mène chaque élément du plan.
+ *
+ * Une étape mène à son fichier, un satellite à l'écran de l'agent ou de la
+ * compétence qu'il nomme. Chaque lien emporte le chemin du workflow en
+ * paramètre : l'éditeur ouvert saura ramener ICI, et pas à l'inventaire.
+ *
+ * Ce qui n'a pas de destination n'en reçoit pas : un fichier d'étape absent du
+ * disque, une commande sans écran, un agent fourni par un plugin. Un lien qui
+ * mène à un 404 vaut moins que pas de lien.
+ */
+function destinations(
+  atelier: ReturnType<typeof lireAtelier>,
+  workflow: NonNullable<ReturnType<typeof lireWorkflow>>,
+  cheminDuWorkflow: string,
+): Record<string, string> {
+  const vers: Record<string, string> = {};
+
+  for (const etape of workflow.etapes) {
+    if (!etape.present) continue;
+    vers[`etape:${etape.numero}:${etape.fichierDeclare}`] = versLEditeur(
+      "/etape",
+      etape.cheminAbsolu,
+      cheminDuWorkflow,
+    );
+  }
+
+  for (const agent of atelier.agents) {
+    vers[`agent:${agent.nom}`] = versLEditeur("/agent", agent.chemin, cheminDuWorkflow);
+  }
+  for (const c of atelier.competences) {
+    vers[`competence:${c.nom}`] = versLEditeur("/competence", c.chemin, cheminDuWorkflow);
+  }
+  return vers;
 }
 
 /** Chaîne vide si ce workflow est modifiable, sinon la raison, en clair. */

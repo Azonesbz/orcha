@@ -11,7 +11,13 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
-import { ajouterEtape, conventionDe, decrireRetrait, retirerEtape } from "./etape.ts";
+import {
+  ajouterEtape,
+  conventionDe,
+  decrireRetrait,
+  enregistrerEtape,
+  retirerEtape,
+} from "./etape.ts";
 import type { EtapeWorkflow, Workflow } from "../lecture/workflow.ts";
 
 function etape(numero: string, fichier: string): EtapeWorkflow {
@@ -246,4 +252,50 @@ test("un titre qui donne le même nom de fichier, à la casse près, est refusé
 
   // Act & Assert
   assert.throws(() => ajouterEtape(skill, relu, { titre: "le grand menage", sortieAttendue: "x" }), /déjà ce titre/i);
+});
+
+test("réécrire un fichier d'étape remplace tout : il n'a pas de frontmatter à préserver", () => {
+  // Arrange
+  const racine = mkdtempSync(join(tmpdir(), "etape-"));
+  process.env.CLAUDE_CONFIG_DIR = racine;
+  const chemin = join(racine, "skills", "lancer", "etapes", "etape-01-cadrage.md");
+  mkdirSync(dirname(chemin), { recursive: true });
+  writeFileSync(chemin, "# Étape 01\n\nAncien texte.\n", "utf8");
+
+  // Act
+  enregistrerEtape(chemin, { corps: "# Étape 01\n\nNouveau texte.\n" });
+
+  // Assert
+  assert.equal(readFileSync(chemin, "utf8"), "# Étape 01\n\nNouveau texte.\n");
+});
+
+test("un SKILL.md est refusé ici : il a un frontmatter, et son propre écran", () => {
+  // Arrange
+  const racine = mkdtempSync(join(tmpdir(), "etape-"));
+  process.env.CLAUDE_CONFIG_DIR = racine;
+  const chemin = join(racine, "skills", "lancer", "SKILL.md");
+  mkdirSync(dirname(chemin), { recursive: true });
+  writeFileSync(chemin, "---\nname: lancer\n---\n\nCorps.\n", "utf8");
+
+  // Act
+  const geste = () => enregistrerEtape(chemin, { corps: "Écrasé." });
+
+  // Assert
+  assert.throws(geste, /SKILL\.md/);
+  assert.ok(readFileSync(chemin, "utf8").includes("name: lancer"), "rien n'a été écrit");
+});
+
+test("un fichier hors des racines connues est refusé avant toute écriture", () => {
+  // Arrange
+  process.env.CLAUDE_CONFIG_DIR = mkdtempSync(join(tmpdir(), "etape-"));
+  delete process.env.ATELIER_PROJET;
+  const dehors = join(mkdtempSync(join(tmpdir(), "dehors-")), "etape.md");
+  writeFileSync(dehors, "Intact.\n", "utf8");
+
+  // Act
+  const geste = () => enregistrerEtape(dehors, { corps: "Écrasé." });
+
+  // Assert
+  assert.throws(geste);
+  assert.equal(readFileSync(dehors, "utf8"), "Intact.\n");
 });

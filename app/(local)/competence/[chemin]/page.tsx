@@ -3,6 +3,7 @@ import { agir } from "./actions";
 import { Editeur } from "@/components/editeur/Editeur";
 import { ModuleIdentite } from "@/components/editeur/ModuleIdentite";
 import { EnteteFichier, RetourListe } from "@/components/EnteteFichier";
+import { retourDepuis } from "@/lib/chrome/retour";
 import { Silences } from "@/components/primitives";
 import { verifierChemin } from "@/lib/ecriture/competence";
 import { ecritureOuverte } from "@/lib/acces/etat";
@@ -12,8 +13,15 @@ import { lireConfig } from "@/lib/reglages/config";
 
 export const dynamic = "force-dynamic";
 
-export default async function Detail({ params }: { params: Promise<{ chemin: string }> }) {
+export default async function Detail({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ chemin: string }>;
+  searchParams: Promise<{ retour?: string }>;
+}) {
   const { chemin } = await params;
+  const { retour } = await searchParams;
   const cible = decodeURIComponent(chemin);
   const competence = lireAtelier().competences.find((c) => c.chemin === cible);
   if (!competence) notFound();
@@ -26,7 +34,7 @@ export default async function Detail({ params }: { params: Promise<{ chemin: str
 
   return (
     <main>
-      <RetourListe href="/competences" libelle="toutes les compétences" />
+      <RetourListe {...retourDepuis(retour, { href: "/competences", libelle: "toutes les compétences" })} />
 
       <EnteteFichier
         nom={competence.nom}

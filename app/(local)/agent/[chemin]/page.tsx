@@ -4,6 +4,7 @@ import { Editeur } from "@/components/editeur/Editeur";
 import { ModuleExecution } from "@/components/editeur/ModuleExecution";
 import { ModuleIdentite } from "@/components/editeur/ModuleIdentite";
 import { EnteteFichier, RetourListe } from "@/components/EnteteFichier";
+import { retourDepuis } from "@/lib/chrome/retour";
 import { Silences } from "@/components/primitives";
 import { ecritureOuverte } from "@/lib/acces/etat";
 import { verifierCheminAgent } from "@/lib/ecriture/agent";
@@ -14,8 +15,15 @@ import { lireConfig } from "@/lib/reglages/config";
 
 export const dynamic = "force-dynamic";
 
-export default async function Detail({ params }: { params: Promise<{ chemin: string }> }) {
+export default async function Detail({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ chemin: string }>;
+  searchParams: Promise<{ retour?: string }>;
+}) {
   const { chemin } = await params;
+  const { retour } = await searchParams;
   const cible = decodeURIComponent(chemin);
   const agent = lireAtelier().agents.find((a) => a.chemin === cible);
   if (!agent) notFound();
@@ -28,7 +36,7 @@ export default async function Detail({ params }: { params: Promise<{ chemin: str
 
   return (
     <main>
-      <RetourListe href="/agents" libelle="tous les agents" />
+      <RetourListe {...retourDepuis(retour, { href: "/agents", libelle: "tous les agents" })} />
 
       <EnteteFichier
         nom={agent.nom}

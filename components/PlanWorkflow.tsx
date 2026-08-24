@@ -28,7 +28,14 @@ const MARGE = 16;
    lettre à l'écran. */
 const GOUTTIERE_SURVOL = 170;
 
-export function PlanWorkflow({ workflow }: { workflow: Workflow }) {
+export function PlanWorkflow({
+  workflow,
+  destinations,
+}: {
+  workflow: Workflow;
+  /** Où mène chaque bloc et chaque satellite, par identité. Vide = non cliquable. */
+  destinations?: Record<string, string>;
+}) {
   const plan = useMemo(() => mettreEnPlan(workflow), [workflow]);
   const [vise, setVise] = useState<string | null>(null);
 
@@ -86,13 +93,13 @@ export function PlanWorkflow({ workflow }: { workflow: Workflow }) {
         ))}
 
         {plan.blocs.map(({ id, etape, x, y, depart, appelle }) => (
+          <Ouvrable key={id} vers={destinations?.[id]}>
           <g
-            key={id}
-            tabIndex={0}
+            tabIndex={destinations?.[id] ? undefined : 0}
             role="listitem"
             aria-label={`Étape ${etape.numero} — ${etape.role}${appelle.length ? `, appelle ${appelle.length} élément(s)` : ""}`}
             style={{ opacity: vif(id) ? 1 : ESTOMPE, transition: FONDU }}
-            className="cursor-default"
+            className={destinations?.[id] ? "cursor-pointer" : "cursor-default"}
             onMouseEnter={() => setVise(id)}
             onFocus={() => setVise(id)}
             onBlur={() => setVise(null)}
@@ -145,16 +152,17 @@ export function PlanWorkflow({ workflow }: { workflow: Workflow }) {
               </text>
             )}
           </g>
+          </Ouvrable>
         ))}
 
         {plan.satellites.map((satellite) => (
+          <Ouvrable key={satellite.id} vers={destinations?.[satellite.id]}>
           <g
-            key={satellite.id}
-            tabIndex={0}
+            tabIndex={destinations?.[satellite.id] ? undefined : 0}
             role="listitem"
             aria-label={`${satellite.nom}, utilisé par ${satellite.appelePar.length} étape(s)`}
             style={{ opacity: vif(satellite.id) ? 1 : ESTOMPE, transition: FONDU }}
-            className="cursor-default"
+            className={destinations?.[satellite.id] ? "cursor-pointer" : "cursor-default"}
             onMouseEnter={() => setVise(satellite.id)}
             onFocus={() => setVise(satellite.id)}
             onBlur={() => setVise(null)}
@@ -206,10 +214,42 @@ export function PlanWorkflow({ workflow }: { workflow: Workflow }) {
                 {satellite.appelePar.length > 1 ? "s" : ""}
               </text>
             )}
+            {/* Le chevron d'ouverture, comme dans la maquette : il dit que le
+                satellite mène quelque part, sans attendre le survol. */}
+            {destinations?.[satellite.id] && (
+              <g
+                transform={`translate(${satellite.x + SATELLITE.largeur - 23} ${satellite.y + 10})`}
+                fill="none"
+                stroke={satellite.sorte === "agent" ? "var(--color-sky)" : "var(--color-muted)"}
+                strokeWidth={3.6}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity={0.7}
+              >
+                <path transform="scale(0.5)" d="M7 17 17 7M8 7h9v9" />
+              </g>
+            )}
           </g>
+          </Ouvrable>
         ))}
       </svg>
     </div>
+  );
+}
+
+/**
+ * Un vrai lien SVG quand l'élément mène quelque part, rien sinon.
+ *
+ * `<a>` et non un `onClick` : le clic milieu, le menu contextuel et la
+ * tabulation continuent de marcher, et l'élément est annoncé comme un lien.
+ * Un `onClick` aurait fabriqué un faux bouton qu'aucun clavier n'atteint.
+ */
+function Ouvrable({ vers, children }: { vers?: string; children: React.ReactNode }) {
+  if (!vers) return <>{children}</>;
+  return (
+    <a href={vers} className="focus-visible:outline-accent">
+      {children}
+    </a>
   );
 }
 
