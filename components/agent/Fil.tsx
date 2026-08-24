@@ -2,6 +2,14 @@
 
 import { useActionState } from "react";
 import { Icone } from "@/components/icones";
+import {
+  MessageScroller,
+  MessageScrollerButton,
+  MessageScrollerContent,
+  MessageScrollerItem,
+  MessageScrollerProvider,
+  MessageScrollerViewport,
+} from "@/components/ui/message-scroller";
 import { annuler, type RetourAgent } from "@/app/(local)/actions-agent";
 
 export interface Tour {
@@ -18,9 +26,13 @@ const VIERGE: RetourAgent = { etat: "vierge", texte: "", instantane: "", dossier
 /**
  * Le fil de la discussion.
  *
+ * Le défilement vient de `message-scroller` : il suit la réponse qui arrive,
+ * garde un bout du tour précédent visible pour ne pas perdre le contexte, et
+ * rend le bouton « descendre » dès qu'on remonte lire. Réimplémenter ça à la
+ * main aurait été trois `useEffect` et autant de bugs de scroll.
+ *
  * Chaque tour de l'agent garde SON instantané : revenir en arrière depuis le
- * troisième tour ne doit pas défaire le premier. Le filet suit la conversation
- * plutôt que de n'en couvrir que la fin.
+ * troisième tour ne doit pas défaire le premier.
  */
 export function Fil({
   tours,
@@ -34,24 +46,36 @@ export function Fil({
   if (tours.length === 0 && !enCours) return null;
 
   return (
-    <div className="flex max-h-[26rem] flex-col gap-3 overflow-y-auto rounded-carte border border-line bg-paper p-4">
-      {tours.map((tour, i) => (
-        <Bulle key={i} tour={tour} session={session} />
-      ))}
-      {enCours && (
-        <p className="flex items-center gap-2 font-mono text-meta text-muted">
-          <span className="size-1.5 animate-pulse rounded-full bg-accent" />
-          l&apos;agent lit et répond…
-        </p>
-      )}
-    </div>
+    <MessageScrollerProvider autoScroll defaultScrollPosition="end" scrollPreviousItemPeek={24}>
+      <MessageScroller className="h-[26rem] rounded-carte border border-line bg-paper">
+        <MessageScrollerViewport className="p-4">
+          <MessageScrollerContent className="gap-4">
+            {tours.map((tour, i) => (
+              <MessageScrollerItem key={i} messageId={String(i)} scrollAnchor={tour.qui === "moi"}>
+                <Bulle tour={tour} session={session} />
+              </MessageScrollerItem>
+            ))}
+            {enCours && (
+              <MessageScrollerItem messageId="en-cours">
+                {/* `shimmer` vient de shadcn/tailwind.css : l'attente se dit par
+                    le texte qui respire, pas par un point qui clignote. */}
+                <p className="shimmer font-mono text-meta text-muted">
+                  l&apos;agent lit, réfléchit et répond…
+                </p>
+              </MessageScrollerItem>
+            )}
+          </MessageScrollerContent>
+        </MessageScrollerViewport>
+        <MessageScrollerButton className="absolute right-4 bottom-4" />
+      </MessageScroller>
+    </MessageScrollerProvider>
   );
 }
 
 function Bulle({ tour, session }: { tour: Tour; session: string }) {
   if (tour.qui === "moi") {
     return (
-      <p className="self-end max-w-[80%] rounded-carte bg-accent-wash px-3.5 py-2.5 text-note whitespace-pre-wrap">
+      <p className="ml-auto w-fit max-w-[80%] rounded-carte bg-accent-wash px-3.5 py-2.5 text-note whitespace-pre-wrap">
         {tour.texte}
       </p>
     );
@@ -66,7 +90,9 @@ function Bulle({ tour, session }: { tour: Tour; session: string }) {
       >
         {tour.texte}
       </div>
-      {tour.instantane && <Retour instantane={tour.instantane} dossier={tour.dossier ?? ""} session={session} />}
+      {tour.instantane && (
+        <Retour instantane={tour.instantane} dossier={tour.dossier ?? ""} session={session} />
+      )}
     </div>
   );
 }

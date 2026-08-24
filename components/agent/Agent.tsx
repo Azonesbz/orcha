@@ -127,7 +127,9 @@ export function Agent() {
           <div className="flex items-center gap-3">
             <button type="submit" disabled={enCours} className="btn-primary">
               <Icone nom="proposer" taille={14} />
-              {enCours ? "L'agent réfléchit…" : fil.length ? "Envoyer" : "Demander"}
+              <span className={enCours ? "shimmer" : undefined}>
+                {enCours ? "L'agent réfléchit…" : fil.length ? "Envoyer" : "Demander"}
+              </span>
             </button>
             {contexte?.peutEcrire && (
               <span className="font-mono text-meta text-muted">
