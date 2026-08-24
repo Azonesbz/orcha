@@ -44,6 +44,46 @@ async function repond(url, essais = 60) {
   return false;
 }
 
+/**
+ * Next émet parfois au démarrage un avertissement de fuite sur un flux Gzip :
+ * onze écouteurs « drain » là où Node en tolère dix par défaut.
+ *
+ * Mesuré avant de le taire : cent vingt requêtes concurrentes n'en produisent
+ * aucun, et le nombre ne grandit jamais. Ce n'est donc pas une fuite — c'est
+ * l'heuristique de Node qui se déclenche sur la rafale du démarrage. Sept
+ * lignes de panique pour un faux positif, en première impression de l'outil.
+ *
+ * On ne tait QUE cette ligne-là. Tout le reste de la sortie d'erreur passe, y
+ * compris un MaxListenersExceededWarning sur un autre émetteur — qui, lui,
+ * mériterait qu'on aille voir.
+ */
+const FAUX_POSITIF = /MaxListenersExceededWarning.*listeners added to \[Gzip\]/;
+const TRACE = /^\(Use `node --trace-warnings/;
+
+function relayerErreurs(flux) {
+  let reste = "";
+  let tue = false;
+  flux.setEncoding("utf8");
+  flux.on("data", (morceau) => {
+    const lignes = (reste + morceau).split("\n");
+    reste = lignes.pop() ?? "";
+    for (const ligne of lignes) {
+      if (FAUX_POSITIF.test(ligne)) {
+        tue = true;
+        continue;
+      }
+      // La ligne « (Use `node --trace-warnings…) » suit l'avertissement qu'elle
+      // commente : la garder seule renverrait à un message qu'on vient de taire.
+      if (tue && TRACE.test(ligne)) continue;
+      tue = false;
+      process.stderr.write(`${ligne}\n`);
+    }
+  });
+  flux.on("end", () => {
+    if (reste !== "" && !FAUX_POSITIF.test(reste)) process.stderr.write(reste);
+  });
+}
+
 function ouvrirNavigateur(url) {
   const commande =
     process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
@@ -61,11 +101,12 @@ if (port !== PORT_PREFERE) {
 
 const serveur = spawn(process.execPath, [join(RACINE, "server.js")], {
   cwd: RACINE,
-  stdio: ["ignore", "pipe", "inherit"],
+  stdio: ["ignore", "pipe", "pipe"],
   env: { ...process.env, HOSTNAME: HOTE, PORT: String(port), NODE_ENV: "production" },
 });
 
 serveur.stdout.on("data", () => {});
+relayerErreurs(serveur.stderr);
 serveur.on("exit", (code) => process.exit(code ?? 0));
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
