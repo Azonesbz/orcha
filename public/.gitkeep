@@ -1,0 +1,5 @@
+Next sert ce dossier tel quel, et le Dockerfile le copie sans condition
+(`COPY /app/public ./public`). Il est vide aujourd'hui — les icônes vivent
+dans app/ —, mais git ne suit pas un dossier vide : sans ce fichier, une
+livraison qui repart d'un dossier neuf n'a pas de public/ et le build casse
+sur « /app/public: not found ».
