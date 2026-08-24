@@ -45,6 +45,10 @@ export async function demander(_precedent: RetourAgent, donnees: FormData): Prom
   // Session vide = premier tour : on l'ouvre et on donne le contexte de l'écran.
   const recue = String(donnees.get("session") ?? "");
   const session = recue || randomUUID();
+  // La conversation suit l'utilisateur d'un écran à l'autre. Quand il change de
+  // page, on ne repart pas de zéro : on dit à l'agent où il regarde maintenant,
+  // comme on le dirait à quelqu'un qui suit par-dessus notre épaule.
+  const contexteNeuf = recue === "" || donnees.get("contexteNeuf") === "1";
   const ecrit = contexte.peutEcrire && (await ecritureOuverte());
 
   // L'instantané se prend AVANT l'appel : après, il ne servirait plus à rien.
@@ -63,6 +67,7 @@ export async function demander(_precedent: RetourAgent, donnees: FormData): Prom
       lireConfig().modele,
       session,
       recue === "",
+      contexteNeuf,
     );
     revalidatePath("/", "layout");
     return { etat: "repondu", texte, instantane, dossier: contexte.dossier, session };

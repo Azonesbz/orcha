@@ -11,7 +11,7 @@
  * compétence plutôt qu'à `.claude` entier évite de copier le cache des plugins.
  */
 
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { lireAtelier } from "../lecture/atelier.ts";
 import { lireTexte, racineUtilisateur } from "../lecture/fichiers.ts";
 import { lireWorkflow } from "../lecture/workflow.ts";
@@ -92,9 +92,30 @@ function duFichier(atelier: Atelier, chemin: string): Contexte {
   };
 }
 
+/**
+ * Le périmètre d'un écran de section, et ce qu'on y autorise.
+ *
+ * Deux choses se décident ensemble parce qu'elles sont la même : ce que
+ * l'agent peut écrire, et ce dont on prend un instantané avant qu'il écrive.
+ * Donner `~/.claude` entier revenait à copier `projects/` — des centaines de
+ * méga-octets de transcriptions qu'Orcha ne touche jamais. Mesuré avant
+ * correction : 925 Mo d'instantanés pour dix-sept questions.
+ *
+ * Un écran de lecture — tableau de bord, réglages, veille — n'écrit rien : il
+ * garde la racine pour pouvoir TOUT lire, et n'a pas d'instantané à prendre.
+ */
+function perimetre(section: string): { dossier: string; peutEcrire: boolean } {
+  const racine = racineUtilisateur();
+  if (section === "competences" || section === "workflows") {
+    return { dossier: join(racine, "skills"), peutEcrire: true };
+  }
+  if (section === "agents") return { dossier: join(racine, "agents"), peutEcrire: true };
+  return { dossier: racine, peutEcrire: false };
+}
+
 function deLaSection(atelier: Atelier, section: string): Contexte {
   const avec = resumer(atelier, true);
-  const commun = { dossier: racineUtilisateur(), peutEcrire: true };
+  const commun = perimetre(section);
 
   if (section === "workflows") {
     return {

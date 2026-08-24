@@ -12,7 +12,13 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { listerInstantanes, prendreInstantane, restaurer } from "./instantane.ts";
+import {
+  GARDES,
+  type Instantane,
+  listerInstantanes,
+  prendreInstantane,
+  restaurer,
+} from "./instantane.ts";
 
 /** Un dossier de travail, plus un ~/.orcha jetable où ranger les instantanés. */
 function terrain(): string {
@@ -106,4 +112,27 @@ test("deux instantanés du même dossier ne se marchent pas dessus", () => {
   // Assert
   assert.notEqual(premier.id, second.id);
   assert.equal(readFileSync(join(dossier, "SKILL.md"), "utf8"), "---\nname: essai\n---\n\nCorps.\n");
+});
+
+test("les instantanés ne s'accumulent pas sans fin", () => {
+  // Arrange — sans plafond ils restent à vie sur le disque de l'utilisateur,
+  // et personne ne va jamais les effacer à la main.
+  const dossier = terrain();
+
+  // Act
+  const pris: Instantane[] = [];
+  for (let i = 0; i < GARDES + 3; i++) pris.push(prendreInstantane(dossier));
+
+  // Assert
+  const restants = listerInstantanes();
+  assert.equal(restants.length, GARDES);
+  assert.ok(
+    restants.some((r) => r.id === pris.at(-1)!.id),
+    "le plus récent doit survivre",
+  );
+  assert.equal(
+    restants.some((r) => r.id === pris[0].id),
+    false,
+    "le plus ancien doit partir",
+  );
 });

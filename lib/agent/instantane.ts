@@ -26,6 +26,16 @@ export interface Instantane {
 
 export class InstantaneIntrouvable extends Error {}
 
+/**
+ * Combien on en garde.
+ *
+ * Sans plafond, ils restent à vie sur le disque : personne ne va jamais les
+ * effacer à la main, et chacun pèse ce que pèse le dossier copié. Vingt
+ * couvre largement une session de travail — au-delà, on ne revient plus en
+ * arrière, on repart du dépôt.
+ */
+export const GARDES = 20;
+
 /** Rangés à côté de la configuration, hors de `.claude` que l'outil inventorie. */
 function racineDesInstantanes(): string {
   return join(dirname(cheminConfig()), "instantanes");
@@ -46,7 +56,16 @@ export function prendreInstantane(dossier: string): Instantane {
   cpSync(dossier, join(cible, "contenu"), { recursive: true });
   mkdirSync(join(cible, "origine", encodeURIComponent(dossier)), { recursive: true });
 
+  elaguer();
   return { id, dossier, pris };
+}
+
+/** Les plus anciens partent quand le plafond est franchi. */
+function elaguer(): void {
+  const tous = listerInstantanes();
+  for (const vieux of tous.slice(GARDES)) {
+    rmSync(join(racineDesInstantanes(), vieux.id), { recursive: true, force: true });
+  }
 }
 
 export function listerInstantanes(): Instantane[] {

@@ -171,3 +171,17 @@ test("la doctrine n'est envoyée qu'à l'ouverture", () => {
   // Assert
   assert.equal(suite.includes("--append-system-prompt"), false);
 });
+
+test("changer d'écran en cours de conversation rappelle le nouveau contexte", () => {
+  // Arrange — la discussion suit l'utilisateur : on ne repart pas de zéro,
+  // on lui dit où il regarde maintenant.
+  const contexte = CONTEXTE;
+
+  // Act
+  const args = argumentsDeLAgent(contexte, "Et ici ?", "claude-opus-5", SESSION, false, true);
+
+  // Assert
+  assert.equal(args[args.indexOf("--resume") + 1], SESSION, "la même conversation continue");
+  assert.match(args[args.indexOf("-p") + 1], /Je regarde maintenant/);
+  assert.match(args[args.indexOf("-p") + 1], /Séquence : 00, 01, 02/);
+});

@@ -53,6 +53,7 @@ export function argumentsDeLAgent(
   modele: Modele | string,
   session: string,
   ouverture: boolean,
+  contexteNeuf = ouverture,
 ): string[] {
   const commun = [
     "--model", modele,
@@ -61,7 +62,13 @@ export function argumentsDeLAgent(
     "--output-format", "text",
   ];
 
-  if (!ouverture) return ["-p", instruction.trim(), "--resume", session, ...commun];
+  if (!ouverture) {
+    // La conversation continue ; on ne rappelle l'écran que s'il a changé.
+    const dit = contexteNeuf
+      ? `${instruction.trim()}\n\n--- Je regarde maintenant : ${contexte.titre} ---\n${contexte.resume}`
+      : instruction.trim();
+    return ["-p", dit, "--resume", session, ...commun];
+  }
 
   return [
     "-p", `${instruction.trim()}\n\n--- Contexte : ${contexte.titre} ---\n${contexte.resume}`,
@@ -77,6 +84,7 @@ export async function demanderALAgent(
   modele: Modele | string,
   session: string,
   ouverture: boolean,
+  contexteNeuf = ouverture,
 ): Promise<string> {
   if (instruction.trim() === "") {
     throw new PropositionRefusee("Écris ta demande avant de lancer l'agent.");
@@ -90,7 +98,7 @@ export async function demanderALAgent(
 
   try {
     const sortie = await lancerClaude({
-      args: argumentsDeLAgent(contexte, instruction, modele, session, ouverture),
+      args: argumentsDeLAgent(contexte, instruction, modele, session, ouverture, contexteNeuf),
       cwd: contexte.dossier,
       delai: 600_000,
     });

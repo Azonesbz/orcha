@@ -121,3 +121,44 @@ test("un chemin de fichier absent ne fait pas tomber l'écran", () => {
   assert.equal(c.peutEcrire, false);
   assert.ok(c.titre.length > 0);
 });
+
+test("le tableau de bord ne donne aucun droit d'écriture : on n'y édite rien", () => {
+  // Arrange — c'est un écran de lecture. Y autoriser l'écriture donnerait au
+  // passage un périmètre grand comme tout ~/.claude.
+  atelierJetable();
+
+  // Act
+  const c = contexteDe("/");
+
+  // Assert
+  assert.equal(c.peutEcrire, false);
+});
+
+test("un écran de section borne l'écriture à son propre dossier", () => {
+  // Arrange — et surtout pas à ~/.claude entier : l'instantané pris avant
+  // écriture y copierait `projects/`, soit des centaines de méga-octets de
+  // transcriptions qu'Orcha ne touche jamais. Mesuré : 925 Mo en 17 questions.
+  const { racine } = atelierJetable();
+
+  // Act
+  const competences = contexteDe("/competences");
+  const agents = contexteDe("/agents");
+
+  // Assert
+  assert.equal(competences.dossier, join(racine, "skills"));
+  assert.equal(agents.dossier, join(racine, "agents"));
+});
+
+test("les réglages et la veille se lisent, ne s'écrivent pas depuis l'agent", () => {
+  // Arrange
+  atelierJetable();
+
+  // Act
+  const cas = ["/reglages", "/veille"].map((r) => contexteDe(r));
+
+  // Assert
+  assert.deepEqual(
+    cas.map((c) => c.peutEcrire),
+    [false, false],
+  );
+});
