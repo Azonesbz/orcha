@@ -227,7 +227,7 @@ export function Agent() {
               type="submit"
               disabled={enCours || instruction.trim() === ""}
               aria-label="Envoyer"
-              className="btn-primary absolute top-1/2 right-2 min-h-0 size-9 -translate-y-1/2 px-0"
+              className="btn-primary absolute right-1.5 bottom-1.5 min-h-0 size-[35px] px-0"
             >
               <Icone nom="envoyer" taille={16} trait={2} />
             </button>

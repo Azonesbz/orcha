@@ -43,7 +43,7 @@ export function Fil({ tours, session }: { tours: Tour[]; session: string }) {
 
   return (
     <MessageScrollerProvider autoScroll defaultScrollPosition="end" scrollPreviousItemPeek={24}>
-      <MessageScroller className="min-h-0 flex-1 rounded-carte border border-line bg-paper">
+      <MessageScroller className="min-h-0 flex-1 rounded-carte border border-line">
         <MessageScrollerViewport className="p-4">
           <MessageScrollerContent className="gap-4">
             {tours.map((tour, i) => (
