@@ -1,4 +1,8 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 /* Direction artistique « Console », établie par la charte graphique v1.0.
    Trois principes, et tout en découle :
@@ -208,4 +212,87 @@ body {
 dialog::backdrop {
   background: rgba(18, 16, 11, 0.8);
   backdrop-filter: blur(2px);
+}
+
+/* ---------------------------------------------------------------------------
+   shadcn/ui — présent, mais sans droit de regard sur la charte.
+   
+   Ses jetons sémantiques (`--background`, `--primary`, `--border`…) sont
+   définis ci-dessous et pointés sur la charte Console, pour qu'un composant
+   ajouté plus tard soit sombre et chaud dès son arrivée plutôt que blanc.
+   
+   Trois entrées de son `@theme inline` ont été RETIRÉES, parce qu'elles
+   écrasaient les miennes : `--font-sans` (Bricolage devenait Geist),
+   `--color-accent` (le Citron devenait un gris) et `--color-muted`. Mesuré
+   avant correction : le bouton primaire ressortait en blanc.
+   
+   Son `@layer base` a été retiré aussi : il repeignait `body` en
+   `bg-background` et posait `border-border` sur `*`. C'est précisément ce que
+   « sans affecter l'UI actuelle » interdit.
+   --------------------------------------------------------------------------- */
+@theme inline {
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* Les valeurs de shadcn, prises dans la charte Console. Pas de bloc `.dark` :
+   l'identité vit sur Noir, c'est un interdit de charte et non une préférence —
+   deux chartes valent moins qu'une. */
+:root {
+  --background: #12100b;
+  --foreground: #f3eedf;
+  --card: #1b1813;
+  --card-foreground: #f3eedf;
+  --popover: #1b1813;
+  --popover-foreground: #f3eedf;
+  --primary: #a3e635;
+  --primary-foreground: #12100b;
+  --secondary: #1b1813;
+  --secondary-foreground: #f3eedf;
+  --muted: #1b1813;
+  --muted-foreground: #9c9684;
+  --accent: rgba(163, 230, 53, 0.08);
+  --accent-foreground: #f3eedf;
+  --destructive: #f87171;
+  --border: rgba(240, 232, 214, 0.1);
+  --input: rgba(240, 232, 214, 0.28);
+  --ring: #a3e635;
+  --radius: 9px;
+  --sidebar: #1b1813;
+  --sidebar-foreground: #f3eedf;
+  --sidebar-primary: #a3e635;
+  --sidebar-primary-foreground: #12100b;
+  --sidebar-accent: rgba(163, 230, 53, 0.08);
+  --sidebar-accent-foreground: #f3eedf;
+  --sidebar-border: rgba(240, 232, 214, 0.1);
+  --sidebar-ring: #a3e635;
 }
