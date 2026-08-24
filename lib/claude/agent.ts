@@ -12,10 +12,9 @@
  * construisent plutôt que de la lancer.
  */
 
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import type { Contexte } from "../agent/contexte.ts";
 import type { Modele } from "../reglages/modeles.ts";
+import { lancerClaude } from "./lancement.ts";
 import { cliDisponible, enClair, PropositionRefusee, refuserSiSessionMorte } from "./proposition.ts";
 
 /** Lire, chercher, ouvrir. Jamais `Bash` : lancer une commande sort du périmètre. */
@@ -52,8 +51,6 @@ export function argumentsDeLAgent(contexte: Contexte, instruction: string, model
   ];
 }
 
-const lancer = promisify(execFile);
-
 export async function demanderALAgent(
   contexte: Contexte,
   instruction: string,
@@ -70,14 +67,13 @@ export async function demanderALAgent(
   }
 
   try {
-    const { stdout } = await lancer("claude", argumentsDeLAgent(contexte, instruction, modele), {
+    const sortie = await lancerClaude({
+      args: argumentsDeLAgent(contexte, instruction, modele),
       cwd: contexte.dossier,
-      maxBuffer: 16 * 1024 * 1024,
-      // Un agent qui construit un workflow entier prend son temps.
-      timeout: 600_000,
+      delai: 600_000,
     });
-    refuserSiSessionMorte(stdout);
-    return stdout.trim() || "L'agent n'a rien répondu.";
+    refuserSiSessionMorte(sortie);
+    return sortie.trim() || "L'agent n'a rien répondu.";
   } catch (erreur) {
     throw new PropositionRefusee(enClair(erreur));
   }

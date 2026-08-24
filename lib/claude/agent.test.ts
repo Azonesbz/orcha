@@ -10,7 +10,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { argumentsDeLAgent } from "./agent.ts";
-import { refuserSiSessionMorte } from "./proposition.ts";
+import { enClair, refuserSiSessionMorte } from "./proposition.ts";
 
 const CONTEXTE = {
   titre: "Plan du workflow lancer",
@@ -116,4 +116,16 @@ test("une réponse normale passe sans encombre", () => {
 
   // Assert
   assert.ok(true, "aucune levée attendue");
+});
+
+test("une session expirée remontée par le lanceur se dit en français, avec le geste", () => {
+  // Arrange — ce que `lancerClaude` rejette réellement, vérifié en conditions.
+  const erreur = new Error("Failed to authenticate: OAuth session expired and could not be refreshed");
+
+  // Act
+  const dit = enClair(erreur);
+
+  // Assert
+  assert.match(dit, /expirée/);
+  assert.match(dit, /terminal/, "il faut dire quoi faire, pas seulement ce qui cloche");
 });

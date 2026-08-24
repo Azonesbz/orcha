@@ -10,9 +10,9 @@
  * l'écriture demande un geste explicite, et passe par `enregistrerCompetence`.
  */
 
-import { execFile, spawnSync } from "node:child_process";
-import { promisify } from "node:util";
+import { spawnSync } from "node:child_process";
 import Anthropic from "@anthropic-ai/sdk";
+import { lancerClaude } from "./lancement.ts";
 import { lireConfig } from "../reglages/config.ts";
 import type { Modele } from "../reglages/modeles.ts";
 
@@ -83,8 +83,6 @@ export async function demanderProposition(demande: DemandeDeProposition): Promis
   }
 }
 
-const lancer = promisify(execFile);
-
 /**
  * La même demande, passée au CLI `claude` en mode impression.
  *
@@ -100,24 +98,24 @@ async function parLeCli(demande: DemandeDeProposition): Promise<string> {
   }
 
   try {
-    const { stdout } = await lancer(
-      "claude",
-      [
+    // ponytail: le corps passe en argument, pas par stdin — un SKILL.md pèse
+    // quelques kilo-octets, loin de la limite d'argv. Passer par stdin si un
+    // fichier énorme apparaît un jour.
+    const sortie = await lancerClaude({
+      args: [
         "-p", enonce(demande),
         "--model", demande.modele ?? lireConfig().modele,
         "--append-system-prompt", CONSIGNE,
         "--disallowedTools", "Bash,Edit,Write,Read,Glob,Grep,WebFetch,WebSearch,Task",
       ],
-      // ponytail: le corps passe en argument, pas par stdin — un SKILL.md pèse
-      // quelques kilo-octets, loin de la limite d'argv. Passer à spawn+stdin si
-      // un fichier énorme apparaît un jour.
-      { maxBuffer: 8 * 1024 * 1024, timeout: 180_000 },
-    );
-    refuserSiSessionMorte(stdout);
-    if (stdout.trim() === "") {
+      cwd: process.cwd(),
+      delai: 180_000,
+    });
+    refuserSiSessionMorte(sortie);
+    if (sortie.trim() === "") {
       throw new PropositionRefusee("Le CLI « claude » n'a rien rendu. Vérifie `claude -p` en terminal.");
     }
-    return sansCloture(stdout);
+    return sansCloture(sortie);
   } catch (erreur) {
     if (erreur instanceof PropositionRefusee) throw erreur;
     throw new PropositionRefusee(enClair(erreur));
