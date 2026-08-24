@@ -232,3 +232,36 @@ test("un ordre identique à l'existant est refusé : rien à faire", () => {
   // Assert — refermer le trou reste un déplacement légitime : 03→02, 04→03.
   assert.ok(plan.deplacements.length > 0, "le trou doit toujours se refermer");
 });
+
+test("réordonner déplace les LIGNES du tableau, pas seulement leurs numéros", () => {
+  // Arrange — le lecteur prend l'ordre des lignes, pas celui des numéros.
+  // Réécrire « 03 » en « 00 » sans remonter la ligne donne un tableau qui se
+  // lit 01, 02, 03, 00 : la numérotation dit une chose, l'ordre en dit une
+  // autre. C'est exactement l'incohérence que cet outil sert à détecter.
+  const { skill, workflow } = atelierATrou();
+
+  // Act
+  appliquerRenumerotation(skill, workflow, undefined, ["04", "00", "01", "03"]);
+
+  // Assert
+  const numeros = readFileSync(skill, "utf8")
+    .split("\n")
+    .map((l) => /^\|\s*(\d+)\s*\|/.exec(l)?.[1])
+    .filter((n): n is string => n !== undefined);
+  assert.deepEqual(numeros, ["00", "01", "02", "03"], "les lignes doivent suivre les numéros");
+});
+
+test("refermer un trou laisse l'ordre des lignes intact", () => {
+  // Arrange
+  const { skill, workflow } = atelierATrou();
+
+  // Act
+  appliquerRenumerotation(skill, workflow);
+
+  // Assert
+  const numeros = readFileSync(skill, "utf8")
+    .split("\n")
+    .map((l) => /^\|\s*(\d+)\s*\|/.exec(l)?.[1])
+    .filter((n): n is string => n !== undefined);
+  assert.deepEqual(numeros, ["00", "01", "02", "03"]);
+});

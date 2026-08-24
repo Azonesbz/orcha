@@ -200,12 +200,41 @@ function reecrireLaLigne(
  * Les renommages passent par un nom provisoire. Sans cela, renommer 04 en 03
  * écraserait le fichier 03 qui n'a pas encore bougé.
  */
+const LIGNE_NUMEROTEE = /^\|\s*(\d+)\s*\|/;
+
+/**
+ * Remet les lignes du tableau dans l'ordre de leurs numéros.
+ *
+ * La substitution réécrit les numéros là où ils sont ; elle ne remonte aucune
+ * ligne. Après un réordonnancement, le tableau se lisait donc 01, 02, 03, 00 —
+ * la numérotation disait une chose et l'ordre des lignes une autre, alors que
+ * c'est l'ordre des lignes que `lireWorkflow` prend pour la séquence. On
+ * fabriquait l'incohérence que cet outil sert à détecter.
+ *
+ * Seul le bloc contigu de lignes numérotées est trié ; l'en-tête du tableau,
+ * les séparateurs et la prose alentour ne bougent pas.
+ */
+function rangerLeTableau(lignes: string[]): string[] {
+  const debut = lignes.findIndex((l) => LIGNE_NUMEROTEE.test(l));
+  if (debut === -1) return lignes;
+
+  let fin = debut;
+  while (fin < lignes.length && LIGNE_NUMEROTEE.test(lignes[fin])) fin++;
+
+  const rangees = lignes
+    .slice(debut, fin)
+    .sort((a, b) => Number(LIGNE_NUMEROTEE.exec(a)![1]) - Number(LIGNE_NUMEROTEE.exec(b)![1]));
+
+  return [...lignes.slice(0, debut), ...rangees, ...lignes.slice(fin)];
+}
+
 export function appliquerRenumerotation(
   cheminSkill: string,
   workflow: Workflow,
   empreinteAttendue?: string,
   ordre?: string[],
 ): PlanRenumerotation {
+  const cheminDuSkill = cheminModifiable(cheminSkill);
   const plan = planifierRenumerotation(cheminSkill, workflow, ordre);
   if (plan.deplacements.length === 0) {
     throw new EcritureRefusee(
@@ -243,7 +272,12 @@ export function appliquerRenumerotation(
 
     const lignes = contenu.split("\n");
     for (const occurrence of occurrences) lignes[occurrence.ligne - 1] = occurrence.apres;
-    ecrireAtomiquement(fichier, lignes.join("\n"));
+    // Le SKILL.md seul porte le tableau, et c'est son ORDRE DE LIGNES que la
+    // lecture prend pour la séquence.
+    ecrireAtomiquement(
+      fichier,
+      (fichier === cheminDuSkill ? rangerLeTableau(lignes) : lignes).join("\n"),
+    );
   }
 
   return plan;

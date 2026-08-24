@@ -45,6 +45,11 @@ export function PlanWorkflow({
   /* Un bloc est aussi un lien : sans ce drapeau, tout déplacement finirait par
      ouvrir le fichier au relâchement. */
   const aGlisse = useRef(false);
+  /* La même valeur que `glisse`, tenue en ref. Le relâchement a besoin de lire
+     la position d'arrivée, et la lire depuis l'updater de `setGlisse` revenait
+     à déclencher une écriture pendant un rendu — React refuse, à raison : un
+     updater doit être pur. */
+  const arrivee = useRef<{ de: number; vers: number } | null>(null);
 
   const pas = BLOC.hauteur + 30;
 
@@ -68,21 +73,22 @@ export function PlanWorkflow({
       if (!aGlisse.current && Math.abs(ecart) < 5) return;
       aGlisse.current = true;
       const vers = Math.max(0, Math.min(plan.blocs.length - 1, index + Math.round(ecart / pas)));
+      arrivee.current = { de: index, vers };
       setGlisse({ id, de: index, vers });
     };
 
     const lacher = () => {
       cible.removeEventListener("pointermove", bouger);
       cible.removeEventListener("pointerup", lacher);
-      setGlisse((actuel) => {
-        if (actuel && actuel.vers !== actuel.de) {
-          const numeros = plan.blocs.map((b) => b.etape.numero);
-          const [pris] = numeros.splice(actuel.de, 1);
-          numeros.splice(actuel.vers, 0, pris);
-          surReordre(numeros);
-        }
-        return null;
-      });
+      const fin = arrivee.current;
+      arrivee.current = null;
+      setGlisse(null);
+
+      if (!fin || fin.vers === fin.de) return;
+      const numeros = plan.blocs.map((b) => b.etape.numero);
+      const [pris] = numeros.splice(fin.de, 1);
+      numeros.splice(fin.vers, 0, pris);
+      surReordre(numeros);
     };
 
     cible.addEventListener("pointermove", bouger);
