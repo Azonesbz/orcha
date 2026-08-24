@@ -22,8 +22,17 @@ export interface Contexte {
   titre: string;
   /** Ce qu'on donne à lire à l'agent, en clair. */
   resume: string;
-  /** Le périmètre : `--add-dir`, et ce dont on prend un instantané. */
+  /** Le périmètre `.claude` : c'est de lui qu'on prend un instantané. */
   dossier: string;
+  /**
+   * Le dépôt auquel ce `.claude` appartient, s'il y en a un.
+   *
+   * Sans lui, un agent ne peut rien faire du code qu'il est censé servir :
+   * ouvrir une branche, lancer les tests, poser une pull request. Il n'est PAS
+   * couvert par l'instantané — un dépôt a git pour filet, et le dupliquer
+   * copierait `node_modules`.
+   */
+  projet?: string;
   /** Faux sur un plugin, ou sur un fichier qu'on n'a pas trouvé. */
   peutEcrire: boolean;
   suggestions: string[];
@@ -31,14 +40,23 @@ export interface Contexte {
 
 const GENERALES = ["Qu'est-ce qui est déclaré mais ne charge pas ?"];
 
+/** Le dépôt qui contient ce `.claude`, c'est-à-dire son dossier parent. */
+function projetDe(atelier: Atelier): string | undefined {
+  if (!atelier.racineProjet) return undefined;
+  return dirname(atelier.racineProjet);
+}
+
 export function contexteDe(chemin: string): Contexte {
   const atelier = lireAtelier();
   const [, section, encode] = chemin.split("/");
   const cible = encode ? decodeURIComponent(encode) : "";
+  const projet = projetDe(atelier);
 
-  if (section === "workflow" && cible) return duWorkflow(atelier, cible);
-  if (["competence", "agent", "etape"].includes(section) && cible) return duFichier(atelier, cible);
-  return deLaSection(atelier, section ?? "");
+  if (section === "workflow" && cible) return { ...duWorkflow(atelier, cible), projet };
+  if (["competence", "agent", "etape"].includes(section) && cible) {
+    return { ...duFichier(atelier, cible), projet };
+  }
+  return { ...deLaSection(atelier, section ?? ""), projet };
 }
 
 function duWorkflow(atelier: Atelier, cheminSkill: string): Contexte {

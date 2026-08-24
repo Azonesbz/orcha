@@ -35,18 +35,20 @@ test("en lecture seule, ni Edit ni Write ne sont accordés", () => {
   assert.match(outils, /Read/);
 });
 
-test("en écriture, Edit et Write sont accordés — et rien de plus", () => {
-  // Arrange
+test("en écriture, Bash est accordé : sans lui, aucune branche ni pull request", () => {
+  // Arrange — la borne n'est plus la liste d'outils mais les dossiers ouverts.
+  // Un agent privé de Bash voit la configuration et ne peut rien faire du code
+  // qu'elle sert : ni lancer les tests, ni poser une pull request.
   const contexte = CONTEXTE;
 
   // Act
-  const args = argumentsDeLAgent(contexte, "Ajoute une étape", "claude-opus-5", SESSION, true);
+  const args = argumentsDeLAgent(contexte, "Ouvre une PR", "claude-opus-5", SESSION, true);
 
   // Assert
   const outils = args[args.indexOf("--allowedTools") + 1];
   assert.match(outils, /Edit/);
   assert.match(outils, /Write/);
-  assert.doesNotMatch(outils, /Bash/, "un agent qui lance des commandes sort du périmètre");
+  assert.match(outils, /Bash/);
 });
 
 test("le périmètre passé au CLI est celui du contexte, jamais la machine entière", () => {
@@ -197,19 +199,43 @@ test("un mode est imposé : en `-p`, aucun humain ne peut répondre à une invit
   assert.equal(args.includes("--permission-mode"), true);
 });
 
-test("Bash et les outils réseau restent refusés en toutes circonstances", () => {
-  // Arrange — c'est ce refus, et non l'invite, qui borne désormais le
-  // périmètre. Une liste d'autorisés seule ne suffirait plus.
+test("le dépôt est ouvert à l'agent, en plus du dossier de configuration", () => {
+  // Arrange — c'est ce qui manquait pour qu'une pull request soit seulement
+  // possible : sans le dépôt dans le périmètre, l'agent voit la configuration
+  // et pas le code qu'elle sert.
+  const contexte = { ...CONTEXTE, projet: "/Users/x/dev/ai-giva" };
+
+  // Act
+  const args = argumentsDeLAgent(contexte, "Ouvre une PR", "claude-opus-5", SESSION, true);
+
+  // Assert
+  const ouverts = args.filter((a, i) => args[i - 1] === "--add-dir");
+  assert.deepEqual(ouverts, [CONTEXTE.dossier, "/Users/x/dev/ai-giva"]);
+});
+
+test("sans projet lu, seul le dossier de configuration est ouvert", () => {
+  // Arrange
   const contexte = CONTEXTE;
 
   // Act
-  const args = argumentsDeLAgent(contexte, "Ajoute une étape", "claude-opus-5", SESSION, true);
+  const args = argumentsDeLAgent(contexte, "Audite", "claude-opus-5", SESSION, true);
 
   // Assert
-  const refuses = args[args.indexOf("--disallowedTools") + 1];
-  assert.match(refuses, /Bash/);
-  assert.match(refuses, /WebFetch/);
-  assert.match(refuses, /Task/);
+  const ouverts = args.filter((a, i) => args[i - 1] === "--add-dir");
+  assert.deepEqual(ouverts, [CONTEXTE.dossier]);
+});
+
+test("un plugin reste en lecture seule, dépôt ouvert ou non", () => {
+  // Arrange — la règle qui ne bouge pas : un plugin est un clone réécrit à la
+  // prochaine mise à jour, y écrire serait perdu en silence.
+  const contexte = { ...CONTEXTE, peutEcrire: false, projet: "/Users/x/dev/ai-giva" };
+
+  // Act
+  const args = argumentsDeLAgent(contexte, "Modifie ça", "claude-opus-5", SESSION, true);
+
+  // Assert
+  const outils = args[args.indexOf("--allowedTools") + 1];
+  assert.doesNotMatch(outils, /Bash|Edit|Write/);
 });
 
 test("le dossier reste borné, quel que soit le mode", () => {

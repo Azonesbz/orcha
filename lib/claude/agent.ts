@@ -17,19 +17,18 @@ import type { Modele } from "../reglages/modeles.ts";
 import { lancerClaude } from "./lancement.ts";
 import { cliDisponible, enClair, PropositionRefusee, refuserSiSessionMorte } from "./proposition.ts";
 
-/** Lire, chercher, ouvrir. Jamais `Bash` : lancer une commande sort du périmètre. */
+/** Lire et chercher, sans rien changer. Le cas d'un plugin, ou d'un écran de lecture. */
 const LECTURE = "Read,Glob,Grep";
-const ECRITURE = `${LECTURE},Edit,Write`;
 
 /**
- * Ce qui reste refusé quoi qu'il arrive.
+ * Tout ce que Claude Code sait faire.
  *
- * Une liste d'autorisés ne suffit plus dès lors que les demandes d'approbation
- * sont levées : rien ne garantit que le mode la respecte. Un refus explicite,
- * lui, se lit dans les deux sens. Bash sortirait du périmètre en une commande,
- * et les outils réseau n'ont rien à faire dans l'inspection d'un dossier local.
+ * `Bash` y est, et ce n'est pas un détail : sans lui l'agent ne peut ni ouvrir
+ * une branche, ni lancer les tests, ni poser une pull request — c'est-à-dire
+ * rien de ce qu'on attend d'un agent qui sert un dépôt. Le contrepoids n'est
+ * plus la liste d'outils mais les dossiers ouverts, et git dans le dépôt.
  */
-const REFUSES = "Bash,Task,WebFetch,WebSearch,NotebookEdit";
+const ECRITURE = `${LECTURE},Edit,Write,Bash,Task,WebFetch,WebSearch,NotebookEdit,TodoWrite`;
 
 const DOCTRINE = [
   "Tu assistes depuis Orcha, un outil qui montre ce qu'un dossier .claude déclare",
@@ -68,12 +67,15 @@ export function argumentsDeLAgent(
   const commun = [
     "--model", modele,
     "--add-dir", contexte.dossier,
+    // Le dépôt auquel ce `.claude` appartient. Sans lui, l'agent voit la
+    // configuration mais pas le code qu'elle sert : ni branche, ni test, ni
+    // pull request.
+    ...(contexte.projet ? ["--add-dir", contexte.projet] : []),
     "--allowedTools", contexte.peutEcrire ? ECRITURE : LECTURE,
-    "--disallowedTools", REFUSES,
     // En mode `-p`, aucun humain n'est là pour répondre à une demande
     // d'approbation : l'agent restait bloqué à la première écriture. Ce qui
-    // borne les dégâts n'est donc plus l'invite, mais `--add-dir` et les deux
-    // listes d'outils ci-dessus.
+    // borne les dégâts n'est donc plus l'invite, mais les dossiers ouverts
+    // ci-dessus — et, dans le dépôt, git.
     "--permission-mode", "bypassPermissions",
     "--output-format", "text",
   ];
@@ -115,7 +117,10 @@ export async function demanderALAgent(
   try {
     const sortie = await lancerClaude({
       args: argumentsDeLAgent(contexte, instruction, modele, session, ouverture, contexteNeuf),
-      cwd: contexte.dossier,
+      // Le dépôt quand il y en a un : `git` et `gh` n'ont de sens que lancés
+      // dedans. Sans ça, une pull request échouerait sur « not a git
+      // repository » alors que tous les outils sont pourtant accordés.
+      cwd: contexte.projet ?? contexte.dossier,
       delai: 600_000,
     });
     refuserSiSessionMorte(sortie);
