@@ -1,5 +1,6 @@
 "use client";
 
+import { Prose } from "@/components/agent/Prose";
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -67,15 +68,13 @@ function Bulle({ tour }: { tour: Tour }) {
   // écrit — bulle teintée — et l'échec, qui doit se voir.
   return (
     <div className="flex flex-col gap-2">
-      <div
-        className={
-          tour.echec
-            ? "rounded-carte border border-danger/30 bg-danger-wash px-3.5 py-2.5 text-note leading-[1.7] whitespace-pre-wrap text-danger"
-            : "text-note leading-[1.7] whitespace-pre-wrap text-ink-soft"
-        }
-      >
-        {tour.texte}
-      </div>
+      {tour.echec ? (
+        <div className="rounded-carte border border-danger/30 bg-danger-wash px-3.5 py-2.5 text-note leading-[1.7] whitespace-pre-wrap text-danger">
+          {tour.texte}
+        </div>
+      ) : (
+        <Prose>{tour.texte}</Prose>
+      )}
     </div>
   );
 }
