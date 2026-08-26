@@ -8,9 +8,13 @@
  */
 
 import assert from "node:assert/strict";
-import { test } from "node:test";
-import { argumentsDeLAgent } from "./agent.ts";
-import { enClair, refuserSiSessionMorte } from "./proposition.ts";
+import { afterEach, test } from "node:test";
+import { argumentsDeLAgent, demanderALAgent } from "./agent.ts";
+import { enClair, PropositionRefusee, refuserSiSessionMorte } from "./proposition.ts";
+
+afterEach(() => {
+  delete process.env.ATELIER_PUBLIC;
+});
 
 const SESSION = "11111111-2222-3333-4444-555555555555";
 
@@ -35,20 +39,30 @@ test("en lecture seule, ni Edit ni Write ne sont accordés", () => {
   assert.match(outils, /Read/);
 });
 
-test("en écriture, Bash est accordé : sans lui, aucune branche ni pull request", () => {
-  // Arrange — la borne n'est plus la liste d'outils mais les dossiers ouverts.
-  // Un agent privé de Bash voit la configuration et ne peut rien faire du code
-  // qu'elle sert : ni lancer les tests, ni poser une pull request.
+test("sur le déploiement public, l'agent refuse avant même de chercher le CLI", async () => {
+  // Arrange — l'écran rend un 404 là-bas, mais l'action serveur reste joignable.
+  // Le refus doit tomber au passage obligé, pas dépendre de la page.
+  process.env.ATELIER_PUBLIC = "1";
+
+  // Act
+  const tentative = demanderALAgent(CONTEXTE, "Ouvre une PR", "claude-opus-5", SESSION, true);
+
+  // Assert
+  await assert.rejects(tentative, PropositionRefusee);
+});
+
+test("en écriture, aucune liste d'outils : l'agent a tout ce que Claude Code sait faire", () => {
+  // Arrange — restreindre ne bornait plus rien depuis que `Bash` était accordé :
+  // un shell sort de n'importe quelle liste. La liste ne faisait qu'amputer
+  // l'agent des serveurs MCP, des compétences et des shells en arrière-plan.
   const contexte = CONTEXTE;
 
   // Act
   const args = argumentsDeLAgent(contexte, "Ouvre une PR", "claude-opus-5", SESSION, true);
 
   // Assert
-  const outils = args[args.indexOf("--allowedTools") + 1];
-  assert.match(outils, /Edit/);
-  assert.match(outils, /Write/);
-  assert.match(outils, /Bash/);
+  assert.equal(args.includes("--allowedTools"), false);
+  assert.equal(args[args.indexOf("--permission-mode") + 1], "bypassPermissions");
 });
 
 test("le périmètre passé au CLI est celui du contexte, jamais la machine entière", () => {

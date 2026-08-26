@@ -49,11 +49,9 @@ function relire(cheminSkill: string) {
  * Il vit ici, dans l'action serveur, et non dans l'interface : griser un bouton
  * n'empêche personne d'appeler l'action directement. Toute écriture y passe.
  */
-async function exigerLaLicence(): Promise<void> {
+async function exigerLEcriture(): Promise<void> {
   if (await ecritureOuverte()) return;
-  throw new Error(
-    "L'écriture demande un compte et un achat. La lecture reste entière — voir la page Compte.",
-  );
+  throw new Error("L'écriture est fermée sur ce déploiement.");
 }
 
 function aboutir(action: () => string): Retour {
@@ -68,7 +66,7 @@ function aboutir(action: () => string): Retour {
 
 export async function ajouter(_precedent: Retour, formulaire: FormData): Promise<Retour> {
   try {
-    await exigerLaLicence();
+    await exigerLEcriture();
   } catch (erreur) {
     return { etat: "refuse", message: erreur instanceof Error ? erreur.message : "Refusé." };
   }
@@ -84,7 +82,7 @@ export async function ajouter(_precedent: Retour, formulaire: FormData): Promise
 
 export async function brancher(_precedent: Retour, formulaire: FormData): Promise<Retour> {
   try {
-    await exigerLaLicence();
+    await exigerLEcriture();
   } catch (erreur) {
     return { etat: "refuse", message: erreur instanceof Error ? erreur.message : "Refusé." };
   }
@@ -101,7 +99,7 @@ export async function brancher(_precedent: Retour, formulaire: FormData): Promis
 
 export async function creer(_precedent: Retour, formulaire: FormData): Promise<Retour> {
   try {
-    await exigerLaLicence();
+    await exigerLEcriture();
   } catch (erreur) {
     return { etat: "refuse", message: erreur instanceof Error ? erreur.message : "Refusé." };
   }
@@ -118,7 +116,7 @@ export async function creer(_precedent: Retour, formulaire: FormData): Promise<R
 
 export async function debrancher(_precedent: Retour, formulaire: FormData): Promise<Retour> {
   try {
-    await exigerLaLicence();
+    await exigerLEcriture();
   } catch (erreur) {
     return { etat: "refuse", message: erreur instanceof Error ? erreur.message : "Refusé." };
   }
@@ -141,6 +139,9 @@ export async function verifierRetrait(_precedent: Retour, formulaire: FormData):
   const numero = String(formulaire.get("numero") ?? "");
   if (!numero) return { etat: "refuse", message: "Choisis d'abord l'étape à retirer." };
   try {
+    // Prévisualiser un retrait, c'est déjà lire le fichier visé : sans ce
+    // verrou, l'action décrirait le disque du serveur sur le déploiement public.
+    await exigerLEcriture();
     const d = decrireRetrait(cheminSkill, relire(cheminSkill), numero);
     return {
       etat: "fait",
@@ -159,7 +160,7 @@ export async function verifierRetrait(_precedent: Retour, formulaire: FormData):
 
 export async function retirer(_precedent: Retour, formulaire: FormData): Promise<Retour> {
   try {
-    await exigerLaLicence();
+    await exigerLEcriture();
   } catch (erreur) {
     return { etat: "refuse", message: erreur instanceof Error ? erreur.message : "Refusé." };
   }
@@ -215,7 +216,7 @@ function rendre(plan: PlanRenumerotation, ecrit: boolean): Retour {
  */
 export async function reordonner(_precedent: Retour, formulaire: FormData): Promise<Retour> {
   try {
-    await exigerLaLicence();
+    await exigerLEcriture();
   } catch (erreur) {
     return { etat: "refuse", message: erreur instanceof Error ? erreur.message : "Refusé." };
   }
@@ -236,6 +237,8 @@ export async function reordonner(_precedent: Retour, formulaire: FormData): Prom
 export async function apercuRenumerotation(_precedent: Retour, formulaire: FormData): Promise<Retour> {
   const cheminSkill = String(formulaire.get("skill") ?? "");
   try {
+    // Même raison qu'au-dessus : l'aperçu lit la séquence sur le disque.
+    await exigerLEcriture();
     return rendre(planifierRenumerotation(cheminSkill, relire(cheminSkill)), false);
   } catch (erreur) {
     return { etat: "refuse", message: erreur instanceof Error ? erreur.message : "Refusé." };
@@ -247,7 +250,7 @@ export async function appliquerRenumerotationAction(
   formulaire: FormData,
 ): Promise<Retour> {
   try {
-    await exigerLaLicence();
+    await exigerLEcriture();
   } catch (erreur) {
     return { etat: "refuse", message: erreur instanceof Error ? erreur.message : "Refusé." };
   }

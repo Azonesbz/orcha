@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { ecritureOuverte } from "@/lib/acces/etat";
 import { effacerChoix, ecrireChoix } from "@/lib/lecture/choix";
 import { estDossier } from "@/lib/lecture/fichiers";
 
@@ -20,6 +21,14 @@ export async function choisirProjet(
   _precedent: RetourProjet,
   formulaire: FormData,
 ): Promise<RetourProjet> {
+  // Cette action-ci vit hors du groupe `(local)`, donc même le 404 du layout ne
+  // la couvrait pas. Elle désigne la racine sur laquelle s'appuient tous les
+  // garde-fous d'écriture : la laisser ouverte reviendrait à laisser choisir
+  // quel dossier du serveur l'outil regarde.
+  if (!(await ecritureOuverte())) {
+    return { etat: "refuse", message: "L'écriture est fermée sur ce déploiement." };
+  }
+
   const projet = String(formulaire.get("projet") ?? "").trim();
 
   if (!projet) {

@@ -6,6 +6,7 @@ import { contexteDe } from "@/lib/agent/contexte";
 import { prendreInstantane } from "@/lib/agent/instantane";
 import { demanderALAgent } from "@/lib/claude/agent";
 import { ecritureOuverte } from "@/lib/acces/etat";
+import { estPublic } from "@/lib/acces/role";
 import { lireConfig } from "@/lib/reglages/config";
 
 /** Ce que l'écran a besoin de savoir avant même de poser une question. */
@@ -22,6 +23,10 @@ export interface ApercuContexte {
  * l'appel, côté serveur, plutôt que de faire l'aller-retour par le navigateur.
  */
 export async function lireContexte(chemin: string): Promise<ApercuContexte> {
+  // Elle lit le `.claude` de la machine : sur le déploiement public ce serait
+  // celui du serveur, et l'écran qui l'appelle n'y existe pas.
+  if (estPublic()) return { titre: "", suggestions: [], peutEcrire: false };
+
   const c = contexteDe(chemin);
   return { titre: c.titre, suggestions: c.suggestions, peutEcrire: c.peutEcrire };
 }

@@ -7,7 +7,6 @@ import { AtelierWorkflow } from "./Atelier";
 import { EnteteFichier, RetourListe } from "@/components/EnteteFichier";
 import { verifierChemin } from "@/lib/ecriture/competence";
 import { EcritureRefusee } from "@/lib/ecriture/garde";
-import { ecritureOuverte } from "@/lib/acces/etat";
 import { lireAtelier } from "@/lib/lecture/atelier";
 import { lireWorkflow } from "@/lib/lecture/workflow";
 
@@ -29,9 +28,10 @@ export default async function VueWorkflow({ params }: { params: Promise<{ chemin
 
   const manquantes = workflow.etapes.filter((e) => !e.present).length;
   const arrets = workflow.etapes.filter((e) => e.arretDur).length;
-  const refus = (await ecritureOuverte())
-    ? raisonDuRefus(competence.chemin)
-    : "L'écriture demande un compte et un achat — la lecture reste entière. Voir la page Compte.";
+  // Cette page ne rend que sur la machine de l'utilisateur — la coquille locale
+  // renvoie un 404 ailleurs — donc l'écriture y est toujours ouverte. Il ne
+  // reste que les refus propres au fichier regardé : un plugin, par exemple.
+  const refus = raisonDuRefus(competence.chemin);
   // Un trou dans la numérotation : 00, 01, 03 — l'étape 02 a été retirée.
   const numerotationATrou = workflow.etapes.some((e, i) => Number(e.numero) !== i);
 

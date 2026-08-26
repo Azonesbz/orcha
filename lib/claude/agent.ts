@@ -7,28 +7,20 @@
  * l'abonnement de la machine, même si une clé d'API est enregistrée.
  *
  * Il écrit directement, sans la relecture qui garde le reste du produit. Ce qui
- * l'empêche de sortir du périmètre, c'est `--add-dir` et `--allowedTools` — la
- * ligne de commande construite ici, et rien d'autre. D'où des tests qui la
- * construisent plutôt que de la lancer.
+ * le borne, c'est `--add-dir` et, dans le dépôt, git — la ligne de commande
+ * construite ici, et rien d'autre. D'où des tests qui la construisent plutôt
+ * que de la lancer. En lecture seule, `--allowedTools` s'y ajoute ; en
+ * écriture, il n'y a plus de liste du tout.
  */
 
 import type { Contexte } from "../agent/contexte.ts";
+import { estPublic } from "../acces/role.ts";
 import type { Modele } from "../reglages/modeles.ts";
 import { lancerClaude } from "./lancement.ts";
 import { cliDisponible, enClair, PropositionRefusee, refuserSiSessionMorte } from "./proposition.ts";
 
 /** Lire et chercher, sans rien changer. Le cas d'un plugin, ou d'un écran de lecture. */
 const LECTURE = "Read,Glob,Grep";
-
-/**
- * Tout ce que Claude Code sait faire.
- *
- * `Bash` y est, et ce n'est pas un détail : sans lui l'agent ne peut ni ouvrir
- * une branche, ni lancer les tests, ni poser une pull request — c'est-à-dire
- * rien de ce qu'on attend d'un agent qui sert un dépôt. Le contrepoids n'est
- * plus la liste d'outils mais les dossiers ouverts, et git dans le dépôt.
- */
-const ECRITURE = `${LECTURE},Edit,Write,Bash,Task,WebFetch,WebSearch,NotebookEdit,TodoWrite`;
 
 const DOCTRINE = [
   "Tu assistes depuis Orcha, un outil qui montre ce qu'un dossier .claude déclare",
@@ -71,7 +63,12 @@ export function argumentsDeLAgent(
     // configuration mais pas le code qu'elle sert : ni branche, ni test, ni
     // pull request.
     ...(contexte.projet ? ["--add-dir", contexte.projet] : []),
-    "--allowedTools", contexte.peutEcrire ? ECRITURE : LECTURE,
+    // En écriture, aucune liste : l'agent dispose de tout ce que Claude Code
+    // sait faire — serveurs MCP, compétences et shells en arrière-plan compris.
+    // Énumérer les outils ne bornait plus rien depuis que `Bash` était accordé,
+    // un shell sortant de n'importe quelle liste ; ça ne faisait qu'amputer
+    // l'agent. Le contrepoids reste les dossiers ouverts, et git dans le dépôt.
+    ...(contexte.peutEcrire ? [] : ["--allowedTools", LECTURE]),
     // En mode `-p`, aucun humain n'est là pour répondre à une demande
     // d'approbation : l'agent restait bloqué à la première écriture. Ce qui
     // borne les dégâts n'est donc plus l'invite, mais les dossiers ouverts
@@ -104,6 +101,16 @@ export async function demanderALAgent(
   ouverture: boolean,
   contexteNeuf = ouverture,
 ): Promise<string> {
+  // Avant tout le reste : sur le déploiement public, l'écran rend un 404 mais
+  // l'action serveur qui mène ici reste joignable. Le refus se pose au passage
+  // obligé vers le CLI, pas dans la page — et il refuse au lieu de retomber en
+  // lecture seule : lire le `.claude` du serveur n'a pas plus de sens qu'y
+  // écrire, et l'agent y disposerait d'un shell.
+  if (estPublic()) {
+    throw new PropositionRefusee(
+      "L'agent ne tourne que sur ta machine : ici, il viserait le disque du serveur.",
+    );
+  }
   if (instruction.trim() === "") {
     throw new PropositionRefusee("Écris ta demande avant de lancer l'agent.");
   }

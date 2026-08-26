@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { ecritureOuverte } from "@/lib/acces/etat";
 import { verifierCle } from "@/lib/claude/proposition";
 import { ecrireConfig, lireConfig } from "@/lib/reglages/config";
 import { estModele, type Modele } from "@/lib/reglages/modeles";
@@ -21,6 +22,12 @@ export async function appliquerReglages(
   _precedent: RetourReglages,
   donnees: FormData,
 ): Promise<RetourReglages> {
+  // Les réglages écrivent la config et manipulent une clé d'API : comme les
+  // autres actions locales, elles restent joignables sur le déploiement public.
+  if (!(await ecritureOuverte())) {
+    return { etat: "refuse", message: "L'écriture est fermée sur ce déploiement." };
+  }
+
   const intention = String(donnees.get("intention") ?? "enregistrer");
   if (intention === "tester") return tester();
   if (intention === "oublier") return oublier();
