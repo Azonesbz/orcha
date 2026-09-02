@@ -11,34 +11,52 @@
  * construite ici, et rien d'autre. D'où des tests qui la construisent plutôt
  * que de la lancer. En lecture seule, `--allowedTools` s'y ajoute ; en
  * écriture, il n'y a plus de liste du tout.
+ *
+ * Il rend son travail au fil de l'eau, pas d'un bloc à la fin : voir
+ * `flux.ts` pour ce que l'écran en fait.
  */
 
 import type { Contexte } from "../agent/contexte.ts";
 import { estPublic } from "../acces/role.ts";
 import type { Modele } from "../reglages/modeles.ts";
-import { lancerClaude } from "./lancement.ts";
-import { cliDisponible, enClair, PropositionRefusee, refuserSiSessionMorte } from "./proposition.ts";
+import { lancerEnFlux } from "./lancement.ts";
+import { DOCTRINE } from "./doctrine.ts";
+import { lireGestes, type Geste } from "./flux.ts";
+import { cliDisponible, enClair } from "./proposition.ts";
 
 /** Lire et chercher, sans rien changer. Le cas d'un plugin, ou d'un écran de lecture. */
 const LECTURE = "Read,Glob,Grep";
 
-const DOCTRINE = [
-  "Tu assistes depuis Orcha, un outil qui montre ce qu'un dossier .claude déclare",
-  "et ce qui charge vraiment. Réponds en français, brièvement.",
-  "",
-  "Règles du produit, non négociables :",
-  "— N'écris JAMAIS dans un plugin (chemin contenant /plugins/cache/ ou",
-  "  /plugins/marketplaces/) : c'est un clone réécrit à la prochaine mise à jour,",
-  "  la modification serait perdue en silence.",
-  "— Une étape déclarée dans un tableau de séquence a TOUJOURS son fichier sur le",
-  "  disque. Écrire l'un sans l'autre fabrique l'écart que cet outil sert à détecter.",
-  "— Une séquence se renumérote de 1 à n, sans trou.",
-  "— Le frontmatter d'un SKILL.md ne se re-sérialise pas : modifie les lignes",
-  "  visées, laisse les autres identiques.",
-  "",
-  "Si tu ne modifies rien, dis ce que tu as constaté. Ne réécris pas un fichier",
-  "pour le plaisir de le réécrire.",
-].join("\n");
+/** Un agent qui construit un workflow entier prend son temps. */
+const DELAI = 600_000;
+
+/**
+ * Au-delà, le titre n'ouvre plus la réponse : il en titre une section tardive.
+ *
+ * Couper à cet endroit-là ferait perdre l'essentiel pour garder l'annexe.
+ */
+const PREAMBULE_MAXIMAL = 600;
+
+const TITRE = /^#{1,3} .+$/m;
+
+/**
+ * Ce que l'agent a écrit, sans la fin de son geste précédent.
+ *
+ * Le dernier message commence volontiers par refermer ce qu'il venait de faire :
+ * « Bon, plus qu'une seule référence… ». Lu seul dans un panneau, ça ouvre sur
+ * un raisonnement dont personne n'a vu le début.
+ *
+ * La doctrine lui demande un titre en tête ; quand il en pose un quand même
+ * trop bas, on affiche à partir de là. Quand il n'y a pas de titre, ou qu'il
+ * arrive trop tard, on ne touche à rien : mieux vaut un préambule qu'une
+ * réponse amputée.
+ */
+export function sansPreambule(texte: string): string {
+  const trouve = TITRE.exec(texte);
+  if (!trouve?.index || trouve.index > PREAMBULE_MAXIMAL) return texte;
+  const reste = texte.slice(trouve.index).trim();
+  return reste === "" ? texte : reste;
+}
 
 /**
  * Construit la ligne de commande. Séparé de l'exécution pour être testable.
@@ -74,7 +92,10 @@ export function argumentsDeLAgent(
     // borne les dégâts n'est donc plus l'invite, mais les dossiers ouverts
     // ci-dessus — et, dans le dépôt, git.
     "--permission-mode", "bypassPermissions",
-    "--output-format", "text",
+    // Une ligne JSON par événement, au fil de l'eau. `--verbose` n'est pas un
+    // réglage de confort : sous `-p`, le CLI refuse `stream-json` sans lui.
+    "--output-format", "stream-json",
+    "--verbose",
   ];
 
   if (!ouverture) {
@@ -93,46 +114,61 @@ export function argumentsDeLAgent(
   ];
 }
 
-export async function demanderALAgent(
+/**
+ * L'agent au travail, geste par geste.
+ *
+ * Rien n'est levé : un refus est un geste comme un autre, et l'abonné en a
+ * déjà reçu vingt quand il tombe. Lever ici obligerait l'écran à tenir deux
+ * chemins pour la même chose — ce qui a échoué après avoir à moitié écrit.
+ */
+export async function* suivreLAgent(
   contexte: Contexte,
   instruction: string,
   modele: Modele | string,
   session: string,
   ouverture: boolean,
   contexteNeuf = ouverture,
-): Promise<string> {
-  // Avant tout le reste : sur le déploiement public, l'écran rend un 404 mais
-  // l'action serveur qui mène ici reste joignable. Le refus se pose au passage
-  // obligé vers le CLI, pas dans la page — et il refuse au lieu de retomber en
-  // lecture seule : lire le `.claude` du serveur n'a pas plus de sens qu'y
-  // écrire, et l'agent y disposerait d'un shell.
-  if (estPublic()) {
-    throw new PropositionRefusee(
-      "L'agent ne tourne que sur ta machine : ici, il viserait le disque du serveur.",
-    );
-  }
-  if (instruction.trim() === "") {
-    throw new PropositionRefusee("Écris ta demande avant de lancer l'agent.");
-  }
-  if (!cliDisponible()) {
-    throw new PropositionRefusee(
-      "La commande « claude » est introuvable sur cette machine. L'agent en dépend : " +
-        "il a besoin d'outils, que l'API seule ne fournit pas.",
-    );
-  }
+): AsyncGenerator<Geste> {
+  const refus = refusDEntree(instruction);
+  if (refus) return yield { sorte: "echec", quoi: refus };
 
+  const args = argumentsDeLAgent(contexte, instruction, modele, session, ouverture, contexteNeuf);
   try {
-    const sortie = await lancerClaude({
-      args: argumentsDeLAgent(contexte, instruction, modele, session, ouverture, contexteNeuf),
+    for await (const ligne of lancerEnFlux({
+      args,
       // Le dépôt quand il y en a un : `git` et `gh` n'ont de sens que lancés
       // dedans. Sans ça, une pull request échouerait sur « not a git
       // repository » alors que tous les outils sont pourtant accordés.
       cwd: contexte.projet ?? contexte.dossier,
-      delai: 600_000,
-    });
-    refuserSiSessionMorte(sortie);
-    return sortie.trim() || "L'agent n'a rien répondu.";
+      delai: DELAI,
+    })) {
+      for (const geste of lireGestes(ligne)) yield acheve(geste);
+    }
   } catch (erreur) {
-    throw new PropositionRefusee(enClair(erreur));
+    yield { sorte: "echec", quoi: enClair(erreur) };
   }
+}
+
+/** Ce qui se refuse avant d'avoir lancé quoi que ce soit. */
+function refusDEntree(instruction: string): string {
+  // Sur le déploiement public, l'écran rend un 404 mais la route qui mène ici
+  // reste joignable. Le refus se pose au passage obligé vers le CLI, pas dans
+  // la page — et il refuse au lieu de retomber en lecture seule : lire le
+  // `.claude` du serveur n'a pas plus de sens qu'y écrire.
+  if (estPublic()) return "L'agent ne tourne que sur ta machine : ici, il viserait le disque du serveur.";
+  if (instruction.trim() === "") return "Écris ta demande avant de lancer l'agent.";
+  if (!cliDisponible()) {
+    return "La commande « claude » est introuvable sur cette machine. L'agent en dépend : " +
+      "il a besoin d'outils, que l'API seule ne fournit pas.";
+  }
+  return "";
+}
+
+/** La réponse finale, dégrossie ; l'échec du CLI, dit en français. */
+function acheve(geste: Geste): Geste {
+  if (geste.sorte === "fin") {
+    return { ...geste, quoi: sansPreambule(geste.quoi.trim()) || "L'agent n'a rien répondu." };
+  }
+  if (geste.sorte === "echec") return { ...geste, quoi: enClair(new Error(geste.quoi)) };
+  return geste;
 }

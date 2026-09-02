@@ -9,8 +9,16 @@
 
 import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
-import { argumentsDeLAgent, demanderALAgent } from "./agent.ts";
-import { enClair, PropositionRefusee, refuserSiSessionMorte } from "./proposition.ts";
+import { argumentsDeLAgent, suivreLAgent, sansPreambule } from "./agent.ts";
+import { enClair, refuserSiSessionMorte } from "./proposition.ts";
+import type { Geste } from "./flux.ts";
+
+/** Le générateur vidé, pour l'affirmer d'un bloc. */
+async function tousLesGestes(flux: AsyncGenerator<Geste>): Promise<Geste[]> {
+  const vus: Geste[] = [];
+  for await (const geste of flux) vus.push(geste);
+  return vus;
+}
 
 afterEach(() => {
   delete process.env.ATELIER_PUBLIC;
@@ -40,15 +48,30 @@ test("en lecture seule, ni Edit ni Write ne sont accordés", () => {
 });
 
 test("sur le déploiement public, l'agent refuse avant même de chercher le CLI", async () => {
-  // Arrange — l'écran rend un 404 là-bas, mais l'action serveur reste joignable.
-  // Le refus doit tomber au passage obligé, pas dépendre de la page.
+  // Arrange — l'écran rend un 404 là-bas, mais la route reste joignable. Le
+  // refus doit tomber au passage obligé, pas dépendre de la page.
   process.env.ATELIER_PUBLIC = "1";
 
   // Act
-  const tentative = demanderALAgent(CONTEXTE, "Ouvre une PR", "claude-opus-5", SESSION, true);
+  const gestes = await tousLesGestes(
+    suivreLAgent(CONTEXTE, "Ouvre une PR", "claude-opus-5", SESSION, true),
+  );
 
   // Assert
-  await assert.rejects(tentative, PropositionRefusee);
+  assert.equal(gestes.length, 1);
+  assert.equal(gestes[0].sorte, "echec");
+  assert.match(gestes[0].quoi, /ta machine/);
+});
+
+test("une demande vide ne lance rien", async () => {
+  // Arrange
+  const vide = "   ";
+
+  // Act
+  const gestes = await tousLesGestes(suivreLAgent(CONTEXTE, vide, "claude-opus-5", SESSION, true));
+
+  // Assert
+  assert.deepEqual(gestes.map((g) => g.sorte), ["echec"]);
 });
 
 test("en écriture, aucune liste d'outils : l'agent a tout ce que Claude Code sait faire", () => {
@@ -261,4 +284,90 @@ test("le dossier reste borné, quel que soit le mode", () => {
 
   // Assert
   assert.equal(args[args.indexOf("--add-dir") + 1], CONTEXTE.dossier);
+});
+
+test("le préambule qui précède le titre est retiré de la réponse", () => {
+  // Arrange — le message final d'un agent commence par la fin de son dernier
+  // geste : « Bon, plus qu'une seule référence… ». Lu seul dans le panneau,
+  // ça ouvre sur un raisonnement dont personne n'a vu le début.
+  const brut = [
+    "Bon, plus qu'une seule référence — les autres mentions sont descriptives.",
+    "",
+    "## Résumé",
+    "",
+    "**Diagnostic** : l'étape 6 fait deux métiers dans un seul fichier.",
+  ].join("\n");
+
+  // Act
+  const affiche = sansPreambule(brut);
+
+  // Assert
+  assert.ok(affiche.startsWith("## Résumé"), affiche);
+  assert.ok(affiche.includes("deux métiers"), "le corps reste entier");
+});
+
+test("une réponse sans titre n'est pas amputée", () => {
+  // Arrange
+  const brut = "Constat : le fichier est déjà aussi resserré que possible.";
+
+  // Act
+  const affiche = sansPreambule(brut);
+
+  // Assert
+  assert.equal(affiche, brut);
+});
+
+test("un titre déjà en tête ne déclenche aucune coupe", () => {
+  // Arrange
+  const brut = "## Résumé\n\nModifié step-06 : la boucle est condensée.";
+
+  // Act
+  const affiche = sansPreambule(brut);
+
+  // Assert
+  assert.equal(affiche, brut);
+});
+
+test("un titre trop loin dans le texte ne fait pas jeter la réponse", () => {
+  // Arrange — sinon une vraie réponse qui titre sa dernière section perdrait
+  // tout ce qui la précède, c'est-à-dire l'essentiel.
+  const brut = `${"Une analyse détaillée. ".repeat(40)}\n\n## Pour aller plus loin\n\nEnsuite.`;
+
+  // Act
+  const affiche = sansPreambule(brut);
+
+  // Assert
+  assert.equal(affiche, brut);
+});
+
+test("le CLI rend son flux, pas un bloc à la fin", () => {
+  // Arrange — en `text`, l'écran n'avait que « Thinking… » pendant des minutes,
+  // puis un bloc. Le flux est ce qui rend le travail visible pendant qu'il se
+  // fait, et `--verbose` est ce que le CLI exige pour le rendre sous `-p`.
+  const contexte = CONTEXTE;
+
+  // Act
+  const args = argumentsDeLAgent(contexte, "Ajoute une étape", "claude-opus-5", SESSION, true);
+
+  // Assert
+  assert.equal(args[args.indexOf("--output-format") + 1], "stream-json");
+  assert.ok(args.includes("--verbose"));
+});
+
+test("la doctrine réclame une réponse qu'on puisse comprendre seule", () => {
+  // Arrange — le reproche d'usage était là : l'agent rendait trois lignes dont
+  // on ne savait ni ce qu'elles touchaient, ni ce qu'il fallait en faire.
+  const contexte = CONTEXTE;
+
+  // Act
+  const doctrine = argumentsDeLAgent(contexte, "Ajoute", "claude-opus-5", SESSION, true)[
+    argumentsDeLAgent(contexte, "Ajoute", "claude-opus-5", SESSION, true).indexOf(
+      "--append-system-prompt",
+    ) + 1
+  ];
+
+  // Assert
+  assert.match(doctrine, /nomme/i, "chaque fichier touché doit être nommé");
+  assert.match(doctrine, /suite|ensuite|maintenant/i, "il doit dire quoi faire après");
+  assert.match(doctrine, /demande|question/i, "devant une demande floue, il questionne au lieu d'écrire");
 });

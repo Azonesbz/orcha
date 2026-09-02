@@ -1,6 +1,8 @@
 "use client";
 
 import { Prose } from "@/components/agent/Prose";
+import { Piste } from "@/components/agent/Gestes";
+import type { Tour } from "@/lib/agent/tour";
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -9,14 +11,6 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller";
-export interface Tour {
-  qui: "moi" | "agent";
-  texte: string;
-  echec?: boolean;
-  /** L'instantané pris avant ce tour, s'il a pu écrire. */
-  instantane?: string;
-  dossier?: string;
-}
 
 /**
  * Le fil de la discussion.
@@ -30,10 +24,11 @@ export interface Tour {
  * rend le bouton « descendre » dès qu'on remonte lire. Réimplémenter ça à la
  * main aurait été trois `useEffect` et autant de bugs de scroll.
  *
- * Chaque tour de l'agent garde SON instantané : revenir en arrière depuis le
- * troisième tour ne doit pas défaire le premier.
+ * Chaque tour de l'agent garde SA piste — ce qu'il a lu, lancé et réécrit pour
+ * répondre. Elle s'affiche pendant le travail et se replie une fois la réponse
+ * là : c'est la preuve, pas la réponse.
  */
-export function Fil({ tours }: { tours: Tour[] }) {
+export function Fil({ tours, enCours }: { tours: Tour[]; enCours: boolean }) {
   if (tours.length === 0) return <div className="min-h-0 flex-1" />;
 
   return (
@@ -43,7 +38,7 @@ export function Fil({ tours }: { tours: Tour[] }) {
           <MessageScrollerContent className="gap-4">
             {tours.map((tour, i) => (
               <MessageScrollerItem key={i} messageId={String(i)} scrollAnchor={tour.qui === "moi"}>
-                <Bulle tour={tour} />
+                <Bulle tour={tour} enCours={enCours && i === tours.length - 1} />
               </MessageScrollerItem>
             ))}
           </MessageScrollerContent>
@@ -54,7 +49,7 @@ export function Fil({ tours }: { tours: Tour[] }) {
   );
 }
 
-function Bulle({ tour }: { tour: Tour }) {
+function Bulle({ tour, enCours }: { tour: Tour; enCours: boolean }) {
   if (tour.qui === "moi") {
     return (
       <p className="ml-auto w-fit max-w-[80%] rounded-carte bg-accent-wash px-3.5 py-2.5 text-note whitespace-pre-wrap">
@@ -68,6 +63,7 @@ function Bulle({ tour }: { tour: Tour }) {
   // écrit — bulle teintée — et l'échec, qui doit se voir.
   return (
     <div className="flex flex-col gap-2">
+      <Piste gestes={tour.gestes ?? []} enCours={enCours} />
       {tour.echec ? (
         <div className="rounded-carte border border-danger/30 bg-danger-wash px-3.5 py-2.5 text-note leading-[1.7] whitespace-pre-wrap text-danger">
           {tour.texte}
