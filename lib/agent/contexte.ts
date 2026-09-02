@@ -14,7 +14,10 @@
 import { dirname, join } from "node:path";
 import { lireAtelier } from "../lecture/atelier.ts";
 import { lireTexte, racineUtilisateur } from "../lecture/fichiers.ts";
-import { lireWorkflow } from "../lecture/workflow.ts";
+import { lireWorkflow, type Workflow } from "../lecture/workflow.ts";
+import { mesurer } from "../lecture/mesures.ts";
+import { listerSessions } from "../lecture/sessions.ts";
+import { duree } from "../temps.ts";
 import { resumer } from "../resume.ts";
 import type { Atelier } from "../types.ts";
 
@@ -84,14 +87,63 @@ function duWorkflow(atelier: Atelier, cheminSkill: string): Contexte {
       workflow?.orphelins.length
         ? `\nFichiers hors séquence, jamais lus : ${workflow.orphelins.join(", ")}`
         : "",
+      derouleMesure(atelier, workflow),
     ].join("\n"),
     dossier: dirname(competence.chemin),
     peutEcrire: modifiable(competence.portee, competence.chemin),
     suggestions: [
+      "Quelle étape coûte le plus, et qu'est-ce qui la rend chère ?",
       "Audite ce workflow : qu'est-ce qui pourrait être amélioré ?",
       "Ajoute une étape qui ",
     ],
   };
+}
+
+/**
+ * Le déroulé réel, joint au plan déclaré.
+ *
+ * Sans lui, l'agent ouvre les fichiers d'étape et raisonne sur ce qui est
+ * *écrit* — exactement ce que la mesure existe pour dépasser. Avec lui, il sait
+ * que l'étape 0 coûte trois heures d'attente et que la 4 n'est jamais observée.
+ *
+ * La mise en garde de vocabulaire part avec les chiffres : un agent à qui on
+ * donne « 0/10 séances » sans elle conclura « étape morte, supprime-la », et se
+ * trompera sur toute étape que l'orchestrateur garde en contexte.
+ */
+function derouleMesure(atelier: Atelier, workflow: Workflow | null): string {
+  const projet = projetDe(atelier);
+  if (!projet || !workflow) return "";
+
+  const seances = listerSessions(projet);
+  const deroule = mesurer(workflow, seances);
+  if (deroule.sessions.length === 0) {
+    return `\nDéroulé mesuré : aucune des ${seances.length} séances lues n'a emprunté ce workflow.`;
+  }
+
+  const sur = deroule.sessions.length;
+  const lignes = deroule.etapes.map(
+    (e) =>
+      `  ${e.numero} — ` +
+      (e.sessions === 0
+        ? "non observée"
+        : `franchie dans ${e.sessions}/${sur} séances, ${e.lectures} lecture(s), ` +
+          `${duree(e.machine)} de travail machine, ${duree(e.attente)} d'attente humaine`),
+  );
+  const reprises = deroule.sessions
+    .filter((s) => s.reprises.length > 0)
+    .map((s) => `  ${s.titre ?? s.id} : ${s.chaine.join(" > ")}`);
+
+  return [
+    "",
+    `Déroulé mesuré sur ${sur} séances réelles (lu dans les transcriptions, pas déclaré) :`,
+    ...lignes,
+    reprises.length ? `\nSéances où un agent revient après un autre :\n${reprises.join("\n")}` : "",
+    "",
+    "Une étape est dite franchie quand son fichier a été lu. L'orchestrateur qui l'a déjà en",
+    "contexte ne la relit pas : « non observée » ne prouve donc PAS « non faite ». La dernière",
+    "étape lue porte tout le temps restant de la séance, et les trous de plus de trente minutes",
+    "sont retranchés.",
+  ].join("\n");
 }
 
 function duFichier(atelier: Atelier, chemin: string): Contexte {

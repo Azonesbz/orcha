@@ -162,3 +162,67 @@ test("les réglages et la veille se lisent, ne s'écrivent pas depuis l'agent", 
     [false, false],
   );
 });
+
+/**
+ * Un projet complet : sa compétence en étapes, et une transcription qui en a
+ * franchi une. C'est le seul montage qui prouve que le plan et le déroulé
+ * arrivent ensemble à l'agent.
+ */
+function projetAvecUneSeance(): string {
+  const racine = mkdtempSync(join(tmpdir(), "ctx-projet-"));
+  process.env.CLAUDE_CONFIG_DIR = join(racine, "config");
+
+  const projet = join(racine, "depot");
+  const etapes = join(projet, ".claude", "skills", "flow", "steps");
+  mkdirSync(etapes, { recursive: true });
+  writeFileSync(
+    join(projet, ".claude", "skills", "flow", "SKILL.md"),
+    "---\nname: flow\ndescription: Flux.\n---\n\n| # | Étape | Rôle |\n|---|---|---|\n" +
+      "| 00 | `steps/step-00.md` | Init |\n| 01 | `steps/step-01.md` | Suite |\n",
+    "utf8",
+  );
+  writeFileSync(join(etapes, "step-00.md"), "Init.\n", "utf8");
+  writeFileSync(join(etapes, "step-01.md"), "Suite.\n", "utf8");
+  process.env.ATELIER_PROJET = projet;
+
+  const trace = join(racine, "config", "projects", "-depot");
+  mkdirSync(trace, { recursive: true });
+  const T = (minute: number) => `2026-08-18T14:${String(minute).padStart(2, "0")}:00.000Z`;
+  writeFileSync(
+    join(trace, "S1.jsonl"),
+    [
+      { type: "user", sessionId: "S1", timestamp: T(0), cwd: projet, message: { content: "vas-y" } },
+      {
+        type: "assistant",
+        sessionId: "S1",
+        timestamp: T(5),
+        message: { content: [{ type: "tool_use", name: "Bash", input: { command: "cat steps/step-00.md" } }] },
+      },
+      { type: "user", sessionId: "S1", timestamp: T(20), cwd: projet, message: { content: "ok" } },
+    ]
+      .map((l) => JSON.stringify(l))
+      .join("\n"),
+    "utf8",
+  );
+  return join(projet, ".claude", "skills", "flow", "SKILL.md");
+}
+
+test("le plan d'un workflow part avec son déroulé mesuré, pas seulement déclaré", () => {
+  // Arrange
+  const skill = projetAvecUneSeance();
+
+  // Act
+  const c = contexteDe(`/workflow/${encodeURIComponent(skill)}`);
+
+  // Assert
+  assert.match(c.resume, /Séquence :/, "le plan déclaré reste là");
+  assert.match(c.resume, /Déroulé mesuré sur 1 séance/);
+  assert.match(c.resume, /00 — franchie dans 1\/1 séances/);
+  assert.match(c.resume, /01 — non observée/);
+  assert.match(
+    c.resume,
+    /ne prouve donc PAS « non faite »/,
+    "sans la mise en garde, l'agent conclura « étape morte, supprime-la »",
+  );
+  delete process.env.ATELIER_PROJET;
+});

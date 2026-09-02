@@ -9,6 +9,10 @@ import { verifierChemin } from "@/lib/ecriture/competence";
 import { EcritureRefusee } from "@/lib/ecriture/garde";
 import { lireAtelier } from "@/lib/lecture/atelier";
 import { lireWorkflow } from "@/lib/lecture/workflow";
+import { DerouleWorkflow } from "@/components/DerouleWorkflow";
+import { mesurer } from "@/lib/lecture/mesures";
+import { compterSessions, listerSessions } from "@/lib/lecture/sessions";
+import { dirname } from "node:path";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +38,11 @@ export default async function VueWorkflow({ params }: { params: Promise<{ chemin
   const refus = raisonDuRefus(competence.chemin);
   // Un trou dans la numérotation : 00, 01, 03 — l'étape 02 a été retirée.
   const numerotationATrou = workflow.etapes.some((e, i) => Number(e.numero) !== i);
+
+  // Le plan est déclaré dans `.claude` ; ce qu'il a donné se lit dans les
+  // transcriptions du projet regardé, à côté, et nulle part ailleurs.
+  const projet = atelier.racineProjet ? dirname(atelier.racineProjet) : null;
+  const seances = projet ? listerSessions(projet) : [];
 
   return (
     <main>
@@ -95,6 +104,12 @@ export default async function VueWorkflow({ params }: { params: Promise<{ chemin
         trait plein : l&apos;étape nomme elle-même la suivante · trait pointillé : ordre du
         tableau seulement
       </p>
+
+      <DerouleWorkflow
+        deroule={projet ? mesurer(workflow, seances) : null}
+        lues={seances.length}
+        total={projet ? compterSessions(projet) : 0}
+      />
 
       {workflow.orphelins.length > 0 && (
         <section className="mt-8">

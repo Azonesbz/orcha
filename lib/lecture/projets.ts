@@ -51,6 +51,22 @@ export function listerProjetsConnus(): ProjetConnu[] {
     .sort((a, b) => b.vuLe - a.vuLe);
 }
 
+/**
+ * Les dossiers de traces d'un projet donné.
+ *
+ * Il peut y en avoir plusieurs : le nom du dossier vient du chemin, et un même
+ * projet atteint par deux chemins équivalents laisse deux traces. On compare
+ * les `cwd`, jamais les noms — ils ne se décodent pas.
+ */
+export function tracesDuProjet(cheminProjet: string): string[] {
+  const dossier = join(racineUtilisateur(), "projects");
+  if (!estDossier(dossier)) return [];
+
+  return listerDossiers(dossier)
+    .map((nom) => join(dossier, nom))
+    .filter((trace) => cheminDepuisLesTranscriptions(trace)?.chemin === cheminProjet);
+}
+
 /** Le `cwd` de la transcription la plus récente, et sa date. */
 function cheminDepuisLesTranscriptions(trace: string): { chemin: string; vuLe: number } | null {
   const fichiers = listerFichiers(trace, ".jsonl")
