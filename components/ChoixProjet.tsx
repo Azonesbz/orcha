@@ -44,7 +44,7 @@ export function ChoixProjet({
           key={actuel ?? "auto"}
           name="projet"
           defaultValue={actuel ?? ""}
-          className="max-w-[28rem] rounded-lg border border-line-strong bg-surface px-2.5 py-[7px] font-mono text-meta-lg text-ink"
+          className="field w-auto max-w-[28rem] font-mono text-description"
         >
           <option value="">— détecter depuis le dossier de lancement —</option>
           {connus.map((p) => (
@@ -60,15 +60,14 @@ export function ChoixProjet({
       <button
         type="submit"
         disabled={enCours}
-        className="rounded-lg bg-accent px-3.5 py-2 text-note font-semibold text-paper transition-colors hover:bg-accent-soft disabled:opacity-45"
+        className="btn-primary"
       >
         {enCours ? "Lecture…" : "Regarder ce projet"}
       </button>
-      {retour.etat !== "vierge" && (
-        <span
-          role={retour.etat === "refuse" ? "alert" : "status"}
-          className={`font-mono text-meta ${retour.etat === "fait" ? "text-accent-soft" : "text-danger"}`}
-        >
+      {/* Rien à confirmer quand ça marche : le sélecteur montre déjà le projet
+          regardé. Seul un refus mérite un mot. */}
+      {retour.etat === "refuse" && (
+        <span role="alert" className="font-mono text-meta text-danger">
           {retour.message}
         </span>
       )}

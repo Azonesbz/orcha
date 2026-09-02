@@ -58,7 +58,7 @@ export function PanneauModifier({
               name="modele"
               defaultValue={modele}
               disabled={!cleConfiguree}
-              className="flex-1 rounded-lg border border-line-strong bg-paper px-2.5 py-2 font-mono text-[11.5px] text-ink disabled:opacity-45"
+              className="field flex-1 font-mono text-description disabled:opacity-45"
             >
               {MODELES.map((m) => (
                 <option key={m} value={m}>

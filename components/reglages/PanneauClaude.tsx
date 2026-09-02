@@ -84,7 +84,7 @@ export function PanneauClaude({
         <select
           name="modele"
           defaultValue={modele}
-          className="w-full rounded-lg border border-line-strong bg-paper px-2.5 py-2.5 font-mono text-[11.5px] text-ink"
+          className="field font-mono text-description"
         >
           {MODELES.map((m) => (
             <option key={m} value={m}>
