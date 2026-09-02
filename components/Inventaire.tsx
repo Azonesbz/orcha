@@ -215,7 +215,12 @@ export function Inventaire({
               silences={c.silences}
               titre={
                 <>
-                  <span className="font-mono font-medium">/{c.nom}</span>
+                  <Link
+                    href={`/commande/${encodeURIComponent(c.chemin)}`}
+                    className="font-mono text-section font-semibold underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
+                  >
+                    /{c.nom}
+                  </Link>
                   <Pastille portee={c.portee} origine={c.origine} />
                 </>
               }

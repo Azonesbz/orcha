@@ -1,3 +1,4 @@
+import { CreationCommande } from "./Creation";
 import { EnteteEcran } from "@/components/EnteteEcran";
 import { Inventaire } from "@/components/Inventaire";
 import { socle } from "@/lib/page-atelier";
@@ -14,6 +15,10 @@ export default function Page() {
         intro="Les agents sont choisis par Claude d'après leur description ; les commandes, tapées par toi."
         serre
       />
+      <div className="mb-6 flex flex-wrap gap-2.5">
+        <CreationCommande />
+      </div>
+
       <Inventaire atelier={atelier} aDesEtapes={aDesEtapes} sections={["agents", "commandes"]} />
     </main>
   );

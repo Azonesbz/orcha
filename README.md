@@ -206,6 +206,20 @@ trois arrêts là où sa propre description en annonce deux.
 
 **Les compétences** : description, indice d'argument, corps.
 
+**Les commandes**, depuis la page Agents et l'écran d'une commande :
+
+| Geste | Ce qui est écrit |
+| --- | --- |
+| Créer une commande | `commands/<nom>.md`, portée utilisateur ou projet |
+| Modifier le corps | ce qui suit le frontmatter, jamais l'en-tête |
+| Retirer une commande | le fichier quitte `commands/` pour `retirees/` — **rien n'est effacé** |
+
+Une commande sans description est refusée : c'est elle qui la présente dans
+`/help`, dans la liste que Claude Code déroule à la frappe, et au modèle s'il
+l'appelle lui-même. Le `retirees/` est **voisin** de `commands/`, jamais
+dessous : Claude Code lit les sous-dossiers comme des espaces de noms, et une
+commande retirée y resterait chargée sous `/retirees:<nom>`.
+
 **Les workflows**, depuis la page de plan, trois gestes :
 
 | Geste | Ce qui est écrit |

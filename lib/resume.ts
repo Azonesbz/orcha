@@ -100,7 +100,7 @@ function ecartsDirects(
     // `typedRoutes` ne peut plus vérifier la destination.
     ...competences.map((c) => ({ e: c, quoi: c.nom, ou: c.chemin, href: "/competences" satisfies Route as Route })),
     ...agents.map((a) => ({ e: a, quoi: a.nom, ou: a.chemin, href: "/agents" satisfies Route as Route })),
-    ...commandes.map((c) => ({ e: c, quoi: `/${c.nom}`, ou: c.chemin, href: "/agents" satisfies Route as Route })),
+    ...commandes.map((c) => ({ e: c, quoi: `/${c.nom}`, ou: c.chemin, href: `/commande/${encodeURIComponent(c.chemin)}` as Route })),
     ...atelier.plugins.map((p) => ({ e: p, quoi: p.identifiant, ou: p.cheminInstallation, href: "/reglages" satisfies Route as Route })),
     ...hooks.map((h) => ({ e: h, quoi: h.evenement, ou: h.commande, href: "/reglages" satisfies Route as Route })),
   ].flatMap(({ e, quoi, ou, href }) => e.silences.map((s) => ({ quoi, cause: s.cause, ou, href })));

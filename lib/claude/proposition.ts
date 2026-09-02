@@ -24,7 +24,7 @@ export interface DemandeDeProposition {
   /** Le corps actuel, tel qu'il est sur le disque. */
   corps: string;
   /** Ce qu'on édite — le modèle n'a pas à le deviner du contenu. */
-  sorte: "compétence" | "sous-agent";
+  sorte: "compétence" | "sous-agent" | "commande";
   nom: string;
   modele?: Modele;
 }
