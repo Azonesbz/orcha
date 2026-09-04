@@ -96,6 +96,9 @@ export function argumentsDeLAgent(
     // réglage de confort : sous `-p`, le CLI refuse `stream-json` sans lui.
     "--output-format", "stream-json",
     "--verbose",
+    // Le texte de la réponse, mot à mot, dans des `stream_event`. Sans ça, la
+    // réponse tombe d'un bloc au `result`, après toute l'attente.
+    "--include-partial-messages",
   ];
 
   if (!ouverture) {

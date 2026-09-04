@@ -85,14 +85,16 @@ function Bulle({ tour, enCours }: { tour: Tour; enCours: boolean }) {
   // dans une boîte alourdit la lecture. Seuls parlent en encadré celui qui
   // écrit — bulle teintée — et l'échec, qui doit se voir.
   //
-  // Le tour de l'agent existe dès l'envoi — il porte la piste des gestes — et
-  // son texte n'arrive qu'à la fin, d'un bloc. L'entrée en fondu de l'item a
-  // donc déjà joué quand la réponse tombe : elle apparaissait d'un coup. Le
-  // bloc de texte ne se monte qu'avec son contenu, et joue sa propre entrée.
+  // Le tour de l'agent existe dès l'envoi — il porte la piste des gestes. La
+  // réponse, elle, s'écrit dessous fragment après fragment (le brouillon),
+  // puis se pose une fois le résultat tombé : même texte, même bloc, aucun
+  // saut. Le bloc ne se monte qu'avec son premier mot, et joue sa propre
+  // entrée : celle de l'item a déjà eu lieu, sur un tour encore vide.
+  const reponse = tour.texte || tour.brouillon || "";
   return (
     <div className="flex flex-col gap-2">
       <Piste gestes={tour.gestes ?? []} enCours={enCours} />
-      {tour.texte !== "" && (
+      {reponse !== "" && (
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -100,10 +102,10 @@ function Bulle({ tour, enCours }: { tour: Tour; enCours: boolean }) {
         >
           {tour.echec ? (
             <div className="rounded-carte border border-danger/30 bg-danger-wash px-3.5 py-2.5 text-note leading-[1.7] whitespace-pre-wrap text-danger">
-              {tour.texte}
+              {reponse}
             </div>
           ) : (
-            <Prose>{tour.texte}</Prose>
+            <Prose>{reponse}</Prose>
           )}
         </motion.div>
       )}

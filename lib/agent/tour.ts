@@ -16,6 +16,8 @@ export interface Tour {
   echec?: boolean;
   /** Ce que l'agent a fait pour ce tour-là, dans l'ordre. */
   gestes?: Geste[];
+  /** La réponse en train de s'écrire, fragment après fragment, avant d'être posée. */
+  brouillon?: string;
 }
 
 /** Le geste rejoint le dernier tour ; la fin et l'échec le closent, une fois. */
@@ -26,15 +28,39 @@ export function versee(tours: Tour[], geste: Geste): Tour[] {
   const denoue = geste.sorte === "fin" || geste.sorte === "echec";
   if (denoue && dernier.texte !== "") return tours;
 
-  const change: Tour = denoue
-    ? {
-        ...dernier,
-        texte: geste.quoi,
-        echec: geste.sorte === "echec",
-        gestes: sansLaReponse(dernier.gestes ?? [], geste.quoi),
-      }
-    : { ...dernier, gestes: [...(dernier.gestes ?? []), geste] };
-  return [...tours.slice(0, -1), change];
+  return [...tours.slice(0, -1), avecLeGeste(dernier, geste)];
+}
+
+/**
+ * Le brouillon suit le bloc de texte en cours. Le CLI rend ce bloc complet
+ * (une note) juste après ses fragments, puis le résultat : entre les deux, la
+ * réponse doit rester à l'écran — la note ne referme donc pas le brouillon.
+ * C'est une action qui le referme : le texte qui la précédait était du récit,
+ * et il est dans la piste.
+ */
+function avecLeGeste(tour: Tour, geste: Geste): Tour {
+  const gestes = tour.gestes ?? [];
+  if (geste.sorte === "fin" || geste.sorte === "echec") {
+    return {
+      ...tour,
+      texte: geste.quoi,
+      echec: geste.sorte === "echec",
+      brouillon: "",
+      gestes: sansLaReponse(gestes, geste.quoi),
+    };
+  }
+  if (geste.sorte === "fragment") {
+    const debut = blocDejaVerse(tour) ? "" : (tour.brouillon ?? "");
+    return { ...tour, brouillon: debut + geste.quoi };
+  }
+  if (geste.sorte === "note") return { ...tour, gestes: [...gestes, geste] };
+  return { ...tour, gestes: [...gestes, geste], brouillon: "" };
+}
+
+/** Le brouillon a déjà été rendu comme note complète : un fragment de plus ouvre un autre bloc. */
+function blocDejaVerse(tour: Tour): boolean {
+  const derniere = tour.gestes?.at(-1);
+  return derniere?.sorte === "note" && derniere.quoi === (tour.brouillon ?? "").trim();
 }
 
 /**

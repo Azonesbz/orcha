@@ -371,3 +371,12 @@ test("la doctrine réclame une réponse qu'on puisse comprendre seule", () => {
   assert.match(doctrine, /suite|ensuite|maintenant/i, "il doit dire quoi faire après");
   assert.match(doctrine, /demande|question/i, "devant une demande floue, il questionne au lieu d'écrire");
 });
+
+test("l'agent demande les fragments de texte : la réponse s'écrit mot à mot", () => {
+  // Arrange & Act
+  const args = argumentsDeLAgent({ ...CONTEXTE, peutEcrire: false }, "Salut", "claude-opus-5", SESSION, true);
+
+  // Assert
+  assert.ok(args.includes("--include-partial-messages"), "sans ce drapeau, la réponse tombe d'un bloc");
+  assert.equal(args[args.indexOf("--output-format") + 1], "stream-json");
+});

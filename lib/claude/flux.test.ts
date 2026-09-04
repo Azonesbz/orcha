@@ -175,3 +175,36 @@ test("une commande et une recherche se distinguent d'une lecture", () => {
   // Assert
   assert.deepEqual(sortes, ["commande", "recherche", "delegation"]);
 });
+
+test("un fragment de réponse devient un fragment, tel quel", () => {
+  // Arrange — ligne capturée d'un `claude -p … --include-partial-messages`
+  const ligne = JSON.stringify({
+    type: "stream_event",
+    event: { type: "content_block_delta", index: 1, delta: { type: "text_delta", text: "Quinze agents" } },
+    session_id: "s",
+    parent_tool_use_id: null,
+  });
+
+  // Act
+  const gestes = lireGestes(ligne);
+
+  // Assert
+  assert.deepEqual(gestes, [{ sorte: "fragment", quoi: "Quinze agents" }]);
+});
+
+test("un fragment de réflexion ne remonte pas, pas plus que le reste du flux partiel", () => {
+  // Arrange — capturées de la même session : la réflexion, et l'enveloppe des blocs
+  const reflexion = JSON.stringify({
+    type: "stream_event",
+    event: { type: "content_block_delta", index: 0, delta: { type: "thinking_delta", thinking: "réflexion", estimated_tokens: 50 } },
+    session_id: "s",
+    parent_tool_use_id: null,
+  });
+  const debut = JSON.stringify({ type: "stream_event", event: { type: "content_block_start", index: 1 }, session_id: "s" });
+  const arret = JSON.stringify({ type: "stream_event", event: { type: "message_stop" }, session_id: "s" });
+
+  // Act & Assert
+  assert.deepEqual(lireGestes(reflexion), []);
+  assert.deepEqual(lireGestes(debut), []);
+  assert.deepEqual(lireGestes(arret), []);
+});

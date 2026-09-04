@@ -16,10 +16,15 @@
  * contenu lu — un `.jsonl` de session, une clé dans un fichier d'environnement.
  * Et le `thinking`, parce qu'il tient dix fois la place de la réponse dans un
  * panneau de trente rem. Ce qu'on garde, c'est le récit et l'acte.
+ *
+ * Avec `--include-partial-messages`, le texte arrive aussi mot à mot, dans des
+ * `stream_event` : ce sont les **fragments**. Ils ne sont pas des gestes à
+ * montrer dans la piste — ils font la réponse qui s'écrit sous les yeux.
  */
 
 export type Sorte =
   | "note"
+  | "fragment"
   | "lecture"
   | "recherche"
   | "ecriture"
@@ -73,6 +78,7 @@ export function lireGestes(ligne: string): Geste[] {
     const texte = String(evenement.result ?? "");
     return [{ sorte: evenement.is_error ? "echec" : "fin", quoi: texte }];
   }
+  if (evenement.type === "stream_event") return duFragment(evenement.event as Bloc | undefined);
   if (evenement.type !== "assistant") return [];
 
   const blocs = (evenement.message as Bloc | undefined)?.content;
@@ -87,6 +93,19 @@ function analyser(ligne: string): Bloc | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Un fragment de texte, tel quel — surtout pas de `trim` : c'est lui qui porte
+ * l'espace entre deux mots. La réflexion a ses propres deltas et reste dehors,
+ * pour la même raison que son bloc complet.
+ */
+function duFragment(evenement: Bloc | undefined): Geste[] {
+  if (evenement?.type !== "content_block_delta") return [];
+  const delta = evenement.delta as Bloc | undefined;
+  if (delta?.type !== "text_delta") return [];
+  const texte = String(delta.text ?? "");
+  return texte === "" ? [] : [{ sorte: "fragment", quoi: texte }];
 }
 
 function duBloc(bloc: Bloc): Geste | null {
