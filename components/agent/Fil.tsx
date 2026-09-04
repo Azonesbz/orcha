@@ -3,6 +3,7 @@
 import { motion, MotionConfig } from "motion/react";
 import { Prose } from "@/components/agent/Prose";
 import { Piste } from "@/components/agent/Gestes";
+import { useMotAMot } from "@/components/agent/motAMot";
 import type { Tour } from "@/lib/agent/tour";
 import {
   MessageScroller,
@@ -73,6 +74,10 @@ export function Fil({ tours, enCours }: { tours: Tour[]; enCours: boolean }) {
 }
 
 function Bulle({ tour, enCours }: { tour: Tour; enCours: boolean }) {
+  // Les paquets du CLI se déroulent mot à mot ; un tour relu s'affiche entier.
+  const reponse = tour.texte || tour.brouillon || "";
+  const affiche = useMotAMot(reponse, enCours);
+
   if (tour.qui === "moi") {
     return (
       <p className="ml-auto w-fit max-w-[80%] rounded-carte bg-accent-wash px-3.5 py-2.5 text-note whitespace-pre-wrap">
@@ -90,7 +95,6 @@ function Bulle({ tour, enCours }: { tour: Tour; enCours: boolean }) {
   // puis se pose une fois le résultat tombé : même texte, même bloc, aucun
   // saut. Le bloc ne se monte qu'avec son premier mot, et joue sa propre
   // entrée : celle de l'item a déjà eu lieu, sur un tour encore vide.
-  const reponse = tour.texte || tour.brouillon || "";
   return (
     <div className="flex flex-col gap-2">
       <Piste gestes={tour.gestes ?? []} enCours={enCours} />
@@ -102,10 +106,10 @@ function Bulle({ tour, enCours }: { tour: Tour; enCours: boolean }) {
         >
           {tour.echec ? (
             <div className="rounded-carte border border-danger/30 bg-danger-wash px-3.5 py-2.5 text-note leading-[1.7] whitespace-pre-wrap text-danger">
-              {reponse}
+              {affiche}
             </div>
           ) : (
-            <Prose>{reponse}</Prose>
+            <Prose>{affiche}</Prose>
           )}
         </motion.div>
       )}
