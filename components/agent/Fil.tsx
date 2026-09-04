@@ -1,5 +1,6 @@
 "use client";
 
+import { motion, MotionConfig } from "motion/react";
 import { Prose } from "@/components/agent/Prose";
 import { Piste } from "@/components/agent/Gestes";
 import type { Tour } from "@/lib/agent/tour";
@@ -27,25 +28,44 @@ import {
  * Chaque tour de l'agent garde SA piste — ce qu'il a lu, lancé et réécrit pour
  * répondre. Elle s'affiche pendant le travail et se replie une fois la réponse
  * là : c'est la preuve, pas la réponse.
+ *
+ * Un tour entre en fondu, douze pixels plus bas que sa place : assez pour que
+ * l'œil voie d'où il arrive, pas assez pour retarder la lecture. Sous
+ * « réduire les animations », la translation part et le fondu reste — comme
+ * le fait déjà globals.css pour les animations CSS.
  */
+
+/* `motion.create` garde le composant du scroller tel quel et lui ajoute les
+   propriétés d'animation : l'ancre de défilement et l'entrée en fondu vivent
+   sur le même nœud, sans div intermédiaire qui fausserait la mesure. */
+const MotionMessageScrollerItem = motion.create(MessageScrollerItem);
+
 export function Fil({ tours, enCours }: { tours: Tour[]; enCours: boolean }) {
   if (tours.length === 0) return <div className="min-h-0 flex-1" />;
 
   return (
-    <MessageScrollerProvider autoScroll defaultScrollPosition="end" scrollPreviousItemPeek={24}>
-      <MessageScroller className="min-h-0 flex-1">
-        <MessageScrollerViewport className="py-2">
-          <MessageScrollerContent className="gap-4">
-            {tours.map((tour, i) => (
-              <MessageScrollerItem key={i} messageId={String(i)} scrollAnchor={tour.qui === "moi"}>
-                <Bulle tour={tour} enCours={enCours && i === tours.length - 1} />
-              </MessageScrollerItem>
-            ))}
-          </MessageScrollerContent>
-        </MessageScrollerViewport>
-        <MessageScrollerButton className="absolute right-4 bottom-4" />
-      </MessageScroller>
-    </MessageScrollerProvider>
+    <MotionConfig reducedMotion="user">
+      <MessageScrollerProvider autoScroll defaultScrollPosition="end" scrollPreviousItemPeek={24}>
+        <MessageScroller className="min-h-0 flex-1">
+          <MessageScrollerViewport className="py-2">
+            <MessageScrollerContent className="gap-4">
+              {tours.map((tour, i) => (
+                <MotionMessageScrollerItem
+                  key={i}
+                  messageId={String(i)}
+                  scrollAnchor={tour.qui === "moi"}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <Bulle tour={tour} enCours={enCours && i === tours.length - 1} />
+                </MotionMessageScrollerItem>
+              ))}
+            </MessageScrollerContent>
+          </MessageScrollerViewport>
+          <MessageScrollerButton className="absolute right-4 bottom-4" />
+        </MessageScroller>
+      </MessageScrollerProvider>
+    </MotionConfig>
   );
 }
 
