@@ -31,12 +31,12 @@ const INTERDITS = [
   // Les sources ne sont pas exécutées — le serveur autonome tourne sur les
   // chunks compilés. Les garder alourdit le paquet et laisse croire qu'on
   // distribue le dépôt.
-  /^docs$/, /^scripts$/, /^atelier-claude$/, /^deployer\.sh$/, /^compose\.yaml$/,
+  /^docs$/, /^scripts$/, /^atelier-claude$/,
   // La publication précédente, que le traçage de Next ramasse dans le dossier
   // de travail. Sans cette ligne chaque version embarque la précédente, qui
   // embarquait la sienne : 4,2 Mo en 0.2.0, 7,5 Mo en 0.3.0, et ça double.
   /^paquet$/, /^charte$/, /^\.ds-sync$/, /^ds-bundle$/, /^\.design-sync$/,
-  /^Dockerfile$/, /^proxy\.ts$/, /^next-env\.d\.ts$/, /^tsconfig\.json$/,
+  /^proxy\.ts$/, /^next-env\.d\.ts$/, /^tsconfig\.json$/,
   /^postcss\.config\.mjs$/, /^next\.config\.ts$/, /^tsconfig\.tsbuildinfo$/,
 ];
 

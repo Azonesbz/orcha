@@ -31,5 +31,3 @@ jobs:
 
       - name: Construction
         run: npm run build
-        env:
-          NEXT_PUBLIC_ATELIER_SERVICE: https://orcha.vincentavz.com

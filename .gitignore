@@ -19,7 +19,8 @@ __pycache__/
 # clerk configuration (can include secrets)
 /.clerk/
 
-# Le fichier de production vit sur le VPS, jamais ici.
+# Reliquat du VPS, qui n'est plus déployé d'ici. S'il traîne encore sur un
+# poste, il ne part jamais.
 .env.production
 
 # Le paquet npm assemblé — reconstruit à chaque publication.

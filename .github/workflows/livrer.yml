@@ -5,6 +5,10 @@
 # interdit de republier une version supprimée. `git tag v0.3.0 && git push
 # --tags` reste un geste délibéré, et c'est ce qu'on veut d'une publication
 # irréversible.
+#
+# Livrer, c'est publier sur npm — rien d'autre. Le produit s'installe par
+# `npx orcha-cli` et tourne sur la machine de qui le lance : aucun serveur à
+# mettre à jour derrière une version.
 name: Livrer
 
 on:
@@ -42,8 +46,6 @@ jobs:
 
       - name: Assembler le paquet
         run: npm run empaqueter
-        env:
-          NEXT_PUBLIC_ATELIER_SERVICE: https://orcha.vincentavz.com
 
       # Garde-fou : Next trace tout le projet dans le build autonome. Un .env
       # oublié partirait sur npm, publiquement et sans retour possible.
@@ -62,38 +64,3 @@ jobs:
         working-directory: paquet
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-  deployer-vps:
-    needs: verifier
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Ouvrir la connexion
-        run: |
-          install -d -m 700 ~/.ssh
-          echo "${{ secrets.VPS_CLE }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "${{ secrets.VPS_HOTE }}" >> ~/.ssh/known_hosts 2>/dev/null
-
-      # Le code part par tar sur SSH : le VPS n'a pas de clé de déploiement, et
-      # lui en donner une pour un dépôt public n'apporterait rien.
-      - name: Transférer et reconstruire
-        run: |
-          tar czf - --exclude=node_modules --exclude=.next --exclude=.git \
-            --exclude='.env*' --exclude=paquet --exclude=__pycache__ . \
-          | ssh -o BatchMode=yes "${{ secrets.VPS_UTILISATEUR }}@${{ secrets.VPS_HOTE }}" \
-              'tar xzf - -C /home/azones/orcha \
-               && cd /home/azones/orcha \
-               && set -a && . ./.env.production && set +a \
-               && docker compose build && docker compose up -d'
-
-      # Le site doit répondre, pas seulement le conteneur démarrer.
-      - name: Vérifier que le site répond
-        run: |
-          for i in $(seq 1 20); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 https://orcha.vincentavz.com/produit || true)
-            [ "$code" = "200" ] && echo "En ligne." && exit 0
-            sleep 6
-          done
-          echo "Le site ne répond pas après le déploiement."; exit 1
