@@ -140,7 +140,11 @@ export function Agent() {
             </p>
           )}
 
-          <Fil tours={tours} enCours={enCours} />
+          {/* Monté seulement tiroir ouvert. Le tiroir reste dans le DOM quand il est
+              fermé — il glisse hors champ — et un fil monté en permanence jouait
+              son entrée en fondu au chargement de la page, hors écran : à
+              l'ouverture, tout était déjà posé et rien ne bougeait. */}
+          {ouvert && <Fil tours={tours} enCours={enCours} />}
 
           {tours.length === 0 && contexte && (
             <div className="flex shrink-0 flex-wrap gap-2">
