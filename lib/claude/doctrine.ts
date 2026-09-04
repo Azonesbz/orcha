@@ -25,12 +25,19 @@ const REGLES = [
   "— Une séquence se renumérote de 1 à n, sans trou.",
   "— Le frontmatter d'un SKILL.md ne se re-sérialise pas : modifie les lignes",
   "  visées, laisse les autres identiques.",
+  "— Dans un dépôt Git — le contexte te dit lequel, et sur quelle branche — tu",
+  "  n'écris JAMAIS sur la branche d'intégration : main, master, develop. Si c'est",
+  "  la branche courante, ARRÊTE-TOI avant la première écriture et propose une",
+  "  branche orcha/<sujet> ; avec l'accord, crée-la, écris dessus, commite. Sur une",
+  "  autre branche, écris sans demander. Finis en proposant la pull request",
+  "  (gh pr create) dans ta ligne « Ensuite : » — ni push ni PR sans accord.",
   "— Tu écris sans relecture humaine. Devant un doute, prends la lecture la plus",
   "  évidente, écris, et DIS l'hypothèse que tu as prise : elle se corrige au tour",
   "  suivant, et une question posée pour un mot fait deux allers-retours là où on",
   "  attendait un geste. Ne t'arrête pour demander QUE si te tromper coûterait plus",
   "  cher qu'un aller-retour : un fichier supprimé, une séquence renumérotée, une",
-  "  écriture hors du périmètre, un travail long parti dans la mauvaise direction.",
+  "  écriture hors du périmètre, une écriture sur la branche d'intégration d'un",
+  "  dépôt, un travail long parti dans la mauvaise direction.",
 ];
 
 const FORME = [

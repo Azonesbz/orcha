@@ -8,6 +8,7 @@
  */
 
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -225,4 +226,62 @@ test("le plan d'un workflow part avec son déroulé mesuré, pas seulement décl
     "sans la mise en garde, l'agent conclura « étape morte, supprime-la »",
   );
   delete process.env.ATELIER_PROJET;
+});
+
+/** Un projet jetable sous Git, sur `main`, avec son `.claude` commité. */
+function projetJetable(): string {
+  const racine = mkdtempSync(join(tmpdir(), "projet-"));
+  mkdirSync(join(racine, ".claude", "skills", "x"), { recursive: true });
+  writeFileSync(join(racine, ".claude", "skills", "x", "SKILL.md"), "---\nname: x\ndescription: X.\n---\n\nCorps.\n", "utf8");
+  const git = (...args: string[]) =>
+    execFileSync("git", ["-C", racine, "-c", "user.name=Orcha", "-c", "user.email=orcha@test", ...args], { stdio: "pipe" });
+  git("init", "-q", "-b", "main");
+  git("add", ".");
+  git("commit", "-q", "-m", "init");
+  return racine;
+}
+
+test("dans un dépôt, l'agent apprend la branche sur laquelle il est", () => {
+  // Arrange
+  atelierJetable();
+  process.env.ATELIER_PROJET = projetJetable();
+
+  // Act
+  const c = contexteDe("/");
+
+  // Assert
+  assert.equal(c.depot?.branche, "main");
+  assert.equal(c.depot?.propre, true);
+  assert.match(c.resume, /branche main/, "le résumé lu par l'agent nomme la branche");
+});
+
+test("hors dépôt, le contexte ne parle d'aucune branche", () => {
+  // Arrange — un projet imposé sans `.claude`, sinon la remontée d'arborescence
+  // depuis le dossier de lancement trouve le dépôt d'Orcha lui-même.
+  atelierJetable();
+  process.env.ATELIER_PROJET = mkdtempSync(join(tmpdir(), "sans-projet-"));
+
+  // Act
+  const c = contexteDe("/");
+
+  // Assert
+  assert.equal(c.depot, undefined);
+  assert.doesNotMatch(c.resume, /branche/);
+});
+
+test("l'écran d'une commande donne son fichier à l'agent, en écriture", () => {
+  // Arrange — la route /commande/<chemin> est née après le mappage des routes :
+  // sans son entrée, l'agent y regardait la vue d'ensemble, en lecture seule.
+  const { racine } = atelierJetable();
+  const commande = join(racine, "commands", "relire.md");
+  mkdirSync(join(racine, "commands"), { recursive: true });
+  writeFileSync(commande, "---\ndescription: Relire.\n---\n\nRelis.\n", "utf8");
+
+  // Act
+  const c = contexteDe(`/commande/${encodeURIComponent(commande)}`);
+
+  // Assert
+  assert.match(c.titre, /relire/);
+  assert.equal(c.peutEcrire, true);
+  assert.equal(c.dossier, join(racine, "commands"));
 });

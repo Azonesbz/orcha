@@ -13,6 +13,7 @@
 
 import { dirname, join } from "node:path";
 import { lireAtelier } from "../lecture/atelier.ts";
+import { depotDe, type Depot } from "../lecture/depot.ts";
 import { lireTexte, racineUtilisateur } from "../lecture/fichiers.ts";
 import { lireWorkflow, type Workflow } from "../lecture/workflow.ts";
 import { mesurer } from "../lecture/mesures.ts";
@@ -36,6 +37,11 @@ export interface Contexte {
    * copierait `node_modules`.
    */
   projet?: string;
+  /**
+   * Où l'agent pose les pieds dans ce dépôt : la branche, et si l'arbre est déjà
+   * en chantier. C'est le fait sur lequel s'appuie la règle « jamais sur main ».
+   */
+  depot?: Depot;
   /** Faux sur un plugin, ou sur un fichier qu'on n'a pas trouvé. */
   peutEcrire: boolean;
   suggestions: string[];
@@ -54,12 +60,23 @@ export function contexteDe(chemin: string): Contexte {
   const [, section, encode] = chemin.split("/");
   const cible = encode ? decodeURIComponent(encode) : "";
   const projet = projetDe(atelier);
+  const depot = projet ? (depotDe(projet) ?? undefined) : undefined;
 
-  if (section === "workflow" && cible) return { ...duWorkflow(atelier, cible), projet };
-  if (["competence", "agent", "etape"].includes(section) && cible) {
-    return { ...duFichier(atelier, cible), projet };
-  }
-  return { ...deLaSection(atelier, section ?? ""), projet };
+  const base =
+    section === "workflow" && cible
+      ? duWorkflow(atelier, cible)
+      : ["competence", "agent", "etape", "commande"].includes(section) && cible
+        ? duFichier(atelier, cible)
+        : deLaSection(atelier, section ?? "");
+  return { ...base, projet, depot, resume: avecLeDepot(base.resume, depot) };
+}
+
+/** Dit à l'agent où il est : la règle « jamais sur main » n'a de sens qu'avec ce fait. */
+function avecLeDepot(resume: string, depot: Depot | undefined): string {
+  if (!depot) return resume;
+  const branche = depot.branche ? `branche ${depot.branche}` : "HEAD détaché";
+  const arbre = depot.propre ? "arbre propre" : "arbre déjà modifié";
+  return `${resume}\n\nDépôt Git : ${depot.racine} — ${branche}, ${arbre}.`;
 }
 
 function duWorkflow(atelier: Atelier, cheminSkill: string): Contexte {
