@@ -29,8 +29,10 @@ import {
  * répondre. Elle s'affiche pendant le travail et se replie une fois la réponse
  * là : c'est la preuve, pas la réponse.
  *
- * Un tour entre en fondu, douze pixels plus bas que sa place : assez pour que
- * l'œil voie d'où il arrive, pas assez pour retarder la lecture. Sous
+ * Un tour entre en fondu en un quart de seconde, seize pixels plus bas que sa
+ * place : assez pour que l'œil voie d'où il arrive, pas assez pour retarder
+ * la lecture. Une durée fixe plutôt que le ressort par défaut de motion : un
+ * ressort sur seize pixels se pose en un clin d'œil et passe inaperçu. Sous
  * « réduire les animations », la translation part et le fondu reste — comme
  * le fait déjà globals.css pour les animations CSS.
  */
@@ -54,8 +56,9 @@ export function Fil({ tours, enCours }: { tours: Tour[]; enCours: boolean }) {
                   key={i}
                   messageId={String(i)}
                   scrollAnchor={tour.qui === "moi"}
-                  initial={{ opacity: 0, y: 12 }}
+                  initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
                 >
                   <Bulle tour={tour} enCours={enCours && i === tours.length - 1} />
                 </MotionMessageScrollerItem>
@@ -81,15 +84,28 @@ function Bulle({ tour, enCours }: { tour: Tour; enCours: boolean }) {
   // Pas de bulle autour d'une réponse : le fil a déjà son cadre, et une boîte
   // dans une boîte alourdit la lecture. Seuls parlent en encadré celui qui
   // écrit — bulle teintée — et l'échec, qui doit se voir.
+  //
+  // Le tour de l'agent existe dès l'envoi — il porte la piste des gestes — et
+  // son texte n'arrive qu'à la fin, d'un bloc. L'entrée en fondu de l'item a
+  // donc déjà joué quand la réponse tombe : elle apparaissait d'un coup. Le
+  // bloc de texte ne se monte qu'avec son contenu, et joue sa propre entrée.
   return (
     <div className="flex flex-col gap-2">
       <Piste gestes={tour.gestes ?? []} enCours={enCours} />
-      {tour.echec ? (
-        <div className="rounded-carte border border-danger/30 bg-danger-wash px-3.5 py-2.5 text-note leading-[1.7] whitespace-pre-wrap text-danger">
-          {tour.texte}
-        </div>
-      ) : (
-        <Prose>{tour.texte}</Prose>
+      {tour.texte !== "" && (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25 }}
+        >
+          {tour.echec ? (
+            <div className="rounded-carte border border-danger/30 bg-danger-wash px-3.5 py-2.5 text-note leading-[1.7] whitespace-pre-wrap text-danger">
+              {tour.texte}
+            </div>
+          ) : (
+            <Prose>{tour.texte}</Prose>
+          )}
+        </motion.div>
       )}
     </div>
   );
