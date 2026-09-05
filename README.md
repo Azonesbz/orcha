@@ -104,6 +104,7 @@ son étiquette parce que le pas le plus sombre reste sous 3:1.
 | Workflows | les compétences qui se déroulent en étapes, et leur plan |
 | Agents | agents et commandes |
 | Réglages | plugins, hooks, permissions, instructions |
+| Codex | le `.codex` lu, et la conversion du `.claude` |
 | Veille | le hook de démarrage et son bloc à coller |
 
 Sur les pages de liste, une case **« ce projet seulement »** masque tout ce qui
@@ -327,6 +328,45 @@ toutes les écritures, dans un seul module : hors des racines connues, **dans un
 plugin** — clone de dépôt, écrasé au prochain `claude plugin update` — et
 écrasement d'un fichier existant lors d'une création.
 
+## Codex
+
+La page **Codex** lit un dossier `.codex` comme les autres pages lisent un
+`.claude`, aux endroits où Codex range les choses :
+
+| Objet | Où Codex le lit |
+| --- | --- |
+| Compétences | `skills/` de `~/.codex`, de `~/.agents`, du `.codex` et du `.agents` du projet |
+| Agents | `agents/*.toml` — `name`, `description`, `developer_instructions` |
+| Prompts (les commandes) | `~/.codex/prompts/*.md`, premier niveau seulement |
+| Hooks | `hooks.json`, ou le bloc `[hooks]` de `config.toml` |
+| Plugins | `[plugins."nom@marketplace"] enabled` × `plugins/cache/` |
+| Instructions | `~/.codex/AGENTS.md`, puis `AGENTS.md` à la racine du projet |
+
+Trois écarts propres à Codex, tous certains : un **projet non approuvé** —
+sans `trust_level = "trusted"` dans `config.toml`, tout son `.codex` est
+ignoré ; un **prompt dans un sous-dossier**, que Codex ne propose jamais là où
+Claude Code en ferait un espace de noms ; et `features.hooks = false`, qui
+éteint les hooks déclarés.
+
+### La conversion
+
+Sous la lecture, un plan par portée : ce que le `.claude` deviendrait dans le
+`.codex`, ligne à ligne, avant qu'un fichier ne bouge.
+
+| Dans `.claude` | Dans `.codex` |
+| --- | --- |
+| `skills/<nom>/` | copié tel quel — sauf si Codex le lit déjà depuis `.agents/skills` |
+| `agents/<nom>.md` | `agents/<nom>.toml` — le corps devient `developer_instructions`, `tools` se perd |
+| `commands/<nom>.md` | `prompts/<nom>.md`, tel quel ; `giva/cadrer` s'aplatit en `giva-cadrer` |
+| `hooks` de `settings.json` | `hooks.json`, même forme — sauf les commandes qui visent Claude Code |
+| `CLAUDE.md` | `AGENTS.md`, tel quel |
+| permissions, plugins, commandes de projet | **sans équivalent** — la note dit quoi faire à la main |
+
+**Rien n'est jamais écrasé.** Une destination qui existe est « déjà là », et
+le reste. Convertir deux fois n'écrit rien la seconde fois. Rien ne sort de
+`~/.codex` ou de `<projet>/.codex`, à une exception près : l'`AGENTS.md` du
+projet, que Codex cherche à sa racine.
+
 ## La règle qui gouverne tout le code
 
 **Ne jamais re-sérialiser le YAML.** La lecture ne re-sérialise rien, l'agent
@@ -371,7 +411,7 @@ ce qu'elle prétend mesurer.
 npm test && npm run test:hook
 ```
 
-Soixante-dix-neuf tests TypeScript, huit Python. Les cas les plus utiles sont des
+Trois cents tests TypeScript, huit Python. Les cas les plus utiles sont des
 régressions payées : `halo` qui doit rester lisible malgré la ligne que YAML
 refuse, le refus d'écrire dans un plugin, et le retrait qui n'efface jamais.
 
@@ -379,9 +419,9 @@ refuse, le refus d'écrire dans un plugin, et le retrait qui n'efface jamais.
 
 | Chemin | Rôle |
 | --- | --- |
-| `lib/lecture/` | Lire le disque : `fichiers`, `competences`, `documents`, `reglages`, `plugins`, `workflow`, `projets`, `choix`, `veille`, `atelier` |
+| `lib/lecture/` | Lire le disque : `fichiers`, `competences`, `documents`, `reglages`, `plugins`, `workflow`, `projets`, `choix`, `veille`, `atelier`, `codex/` (le même inventaire, lu où Codex range les choses) |
 | `lib/plan.ts` | La mise en plan d'un workflow : positions déterministes |
-| `lib/ecriture/` | Écrire sans casser : `garde` (les refus partagés), `empreinte` (le lien montré/écrit), `frontmatter`, `competence`, `etape`, `agent`, `renumerotation` |
+| `lib/ecriture/` | Écrire sans casser : `garde` (les refus partagés), `empreinte` (le lien montré/écrit), `frontmatter`, `competence`, `etape`, `agent`, `renumerotation`, `codex/` (le plan et la conversion) |
 | `app/` | L'interface : liste, détail, plan de workflow, agent |
 | `hook.py`, `ecart.py`, `lecture.py`, `message.py` | Le hook de veille, indépendant du web |
 
