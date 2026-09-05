@@ -15,17 +15,23 @@ const DECISIONS = ["allow", "deny", "ask"] as const;
 const FICHIERS = ["settings.json", "settings.local.json"] as const;
 
 export function lireHooks(racine: string, portee: Portee): Hook[] {
-  const trouves: Hook[] = [];
-  for (const fichier of FICHIERS) {
-    const reglages = lireJson(join(racine, fichier));
-    const hooks = reglages.hooks;
-    if (!hooks || typeof hooks !== "object") continue;
+  return FICHIERS.flatMap((fichier) =>
+    hooksDepuisBloc(lireJson(join(racine, fichier)).hooks, portee, fichier),
+  );
+}
 
-    for (const [evenement, groupes] of Object.entries(hooks as Record<string, unknown>)) {
-      if (!Array.isArray(groupes)) continue;
-      for (const groupe of groupes) {
-        trouves.push(...depuisGroupe(evenement, groupe, portee, `${fichier}`));
-      }
+/**
+ * La valeur de `hooks`, d'où qu'elle vienne : `settings.json` chez Claude Code,
+ * `hooks.json` ou le bloc `[hooks]` de `config.toml` chez Codex — la même
+ * forme, un objet par événement.
+ */
+export function hooksDepuisBloc(hooks: unknown, portee: Portee, origine: string): Hook[] {
+  if (!hooks || typeof hooks !== "object") return [];
+  const trouves: Hook[] = [];
+  for (const [evenement, groupes] of Object.entries(hooks as Record<string, unknown>)) {
+    if (!Array.isArray(groupes)) continue;
+    for (const groupe of groupes) {
+      trouves.push(...depuisGroupe(evenement, groupe, portee, origine));
     }
   }
   return trouves;
