@@ -8,6 +8,7 @@ import { EnteteFichier, RetourListe } from "@/components/EnteteFichier";
 import { verifierChemin } from "@/lib/ecriture/competence";
 import { EcritureRefusee } from "@/lib/ecriture/garde";
 import { lireAtelier } from "@/lib/lecture/atelier";
+import { lireDrapeaux } from "@/lib/lecture/drapeaux";
 import { lireWorkflow } from "@/lib/lecture/workflow";
 import { DerouleWorkflow } from "@/components/DerouleWorkflow";
 import { mesurer } from "@/lib/lecture/mesures";
@@ -30,6 +31,7 @@ export default async function VueWorkflow({ params }: { params: Promise<{ chemin
   });
   if (!workflow) notFound();
 
+  const drapeaux = lireDrapeaux(competence.corps, workflow.etapes.map((e) => e.numero));
   const manquantes = workflow.etapes.filter((e) => !e.present).length;
   const arrets = workflow.etapes.filter((e) => e.arretDur).length;
   // Cette page ne rend que sur la machine de l'utilisateur — la coquille locale
@@ -98,11 +100,13 @@ export default async function VueWorkflow({ params }: { params: Promise<{ chemin
         destinations={destinations(atelier, workflow, competence.chemin)}
         cheminSkill={competence.chemin}
         modifiable={refus === ""}
+        drapeaux={drapeaux}
       />
 
       <p className="mt-5 font-mono text-meta text-muted">
         trait plein : l&apos;étape nomme elle-même la suivante · trait pointillé : ordre du
         tableau seulement
+        {drapeaux.length > 0 && " · grisé : sautée par le drapeau choisi"}
       </p>
 
       <DerouleWorkflow

@@ -32,14 +32,24 @@ export function PlanWorkflow({
   workflow,
   destinations,
   surReordre,
+  sautees,
+  fin,
 }: {
   workflow: Workflow;
   /** Où mène chaque bloc et chaque satellite, par identité. Vide = non cliquable. */
   destinations?: Record<string, string>;
   /** Appelé au dépôt d'une étape déplacée, avec les numéros dans l'ordre voulu. */
   surReordre?: (ordre: string[]) => void;
+  /** Les numéros d'étapes que le drapeau choisi saute : grisées, liens compris. */
+  sautees?: Set<string>;
+  /** Le numéro de l'étape où le drapeau choisi arrête le workflow. */
+  fin?: string | null;
 }) {
   const plan = useMemo(() => mettreEnPlan(workflow), [workflow]);
+  const idsSautes = useMemo(
+    () => new Set(plan.blocs.filter((b) => sautees?.has(b.etape.numero)).map((b) => b.id)),
+    [plan, sautees],
+  );
   const [vise, setVise] = useState<string | null>(null);
   const [glisse, setGlisse] = useState<{ id: string; de: number; vers: number } | null>(null);
   /* Un bloc est aussi un lien : sans ce drapeau, tout déplacement finirait par
@@ -105,9 +115,11 @@ export function PlanWorkflow({
     return null;
   }, [vise, plan]);
 
-  const vif = (id: string) => !enAvant || enAvant.has(id);
+  const vif = (id: string) => !idsSautes.has(id) && (!enAvant || enAvant.has(id));
   const vifLien = (lien: Lien) =>
-    !enAvant || (enAvant.has(lien.extremites[0]) && enAvant.has(lien.extremites[1]));
+    !idsSautes.has(lien.extremites[0]) &&
+    !idsSautes.has(lien.extremites[1]) &&
+    (!enAvant || (enAvant.has(lien.extremites[0]) && enAvant.has(lien.extremites[1])));
 
   const largeur = plan.largeur + MARGE * 2 + GOUTTIERE_SURVOL;
 
@@ -174,6 +186,16 @@ export function PlanWorkflow({
             {depart && (
               <text x={x + 10} y={y - 10} className="fill-accent font-mono text-[11px]">
                 ▸ point de départ
+              </text>
+            )}
+            {sautees?.has(etape.numero) && (
+              <text x={x + BLOC.largeur - 10} y={y - 10} textAnchor="end" className="fill-muted font-mono text-[11px]">
+                sautée par le drapeau
+              </text>
+            )}
+            {fin === etape.numero && (
+              <text x={x + 10} y={y + BLOC.hauteur + 18} className="fill-danger font-mono text-[11px]">
+                ■ fin du workflow sous ce drapeau
               </text>
             )}
             <rect

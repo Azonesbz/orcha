@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { FiltreDrapeaux } from "@/components/FiltreDrapeaux";
 import { PlanWorkflow } from "@/components/PlanWorkflow";
 import { reordonner, type Retour } from "./actions";
+import type { Drapeau } from "@/lib/lecture/drapeaux";
 import type { Workflow } from "@/lib/lecture/workflow";
 
 const VIERGE: Retour = { etat: "vierge", message: "" };
@@ -19,13 +21,21 @@ export function PlanReordonnable({
   destinations,
   cheminSkill,
   modifiable,
+  drapeaux,
 }: {
   workflow: Workflow;
   destinations: Record<string, string>;
   cheminSkill: string;
   modifiable: boolean;
+  /** Les drapeaux déclarés par le SKILL.md — vide, le filtre n'apparaît pas. */
+  drapeaux: Drapeau[];
 }) {
   const [retour, action, enCours] = useActionState(reordonner, VIERGE);
+  const [choisi, setChoisi] = useState<string | null>(null);
+  const actif = drapeaux.find((d) => d.drapeau === choisi);
+  const sautees = actif?.actives
+    ? new Set(workflow.etapes.map((e) => e.numero).filter((n) => !actif.actives!.includes(n)))
+    : undefined;
 
   // Le formulaire est soumis par le code, jamais par un bouton : c'est le
   // relâchement de la souris qui vaut validation.
@@ -36,9 +46,14 @@ export function PlanReordonnable({
   return (
     <form action={action} data-plan>
       <input type="hidden" name="skill" value={cheminSkill} />
+      {drapeaux.length > 0 && (
+        <FiltreDrapeaux drapeaux={drapeaux} total={workflow.etapes.length} choisi={choisi} onChoisir={setChoisi} />
+      )}
       <PlanWorkflow
         workflow={workflow}
         destinations={destinations}
+        sautees={sautees}
+        fin={actif?.finAnticipee ?? null}
         surReordre={
           modifiable && !enCours
             ? (ordre) => {

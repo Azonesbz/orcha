@@ -183,6 +183,22 @@ Une mention en passant dans un corps ne compte pas — `halo/step-01` contient
 « arrêt dur » uniquement pour dire qu'il n'en a **pas**, et le compter en
 faisait deux là où `step-02` se déclare « le seul arrêt dur de HALO ».
 
+### Les drapeaux
+
+Certains workflows changent de forme selon un drapeau : `giva-flow` en a six
+modes — `--express` saute les étapes 4 et 6, `--cadrage` s'arrête à la 2,
+`--review-only` ne garde que 0, 1 et 6. La page du plan les lit dans le
+tableau des modes du `SKILL.md`, une ligne par drapeau, et propose un filtre :
+choisir un drapeau grise les étapes qu'il saute, liens compris, et marque
+l'étape où il arrête le workflow. Un paramètre orthogonal (`--front`,
+`--full-auto`) se choisit aussi — il se dit alors pour ce qu'il est, sans rien
+griser, plutôt que d'être absent.
+
+Seule la cellule d'étapes fait foi — « 0 → 8, étapes 4 et 6 sautées », « 0 → 2
+puis STOP », « 0, 1, 6 puis STOP » — et elle doit n'être faite que de numéros :
+une cellule d'effet qui dit « corrigée à l'étape 2 » n'est pas une séquence.
+La prose ne compte pas.
+
 ### Comment un workflow est reconnu
 
 Une ligne de tableau dont **la première cellule est un nombre** et dont **une
