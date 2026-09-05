@@ -188,9 +188,11 @@ faisait deux là où `step-02` se déclare « le seul arrêt dur de HALO ».
 Certains workflows changent de forme selon un drapeau : `giva-flow` en a six
 modes — `--express` saute les étapes 4 et 6, `--cadrage` s'arrête à la 2,
 `--review-only` ne garde que 0, 1 et 6. La page du plan les lit dans le
-tableau des modes du `SKILL.md`, une ligne par drapeau, et propose un filtre :
-choisir un drapeau grise les étapes qu'il saute, liens compris, et marque
-l'étape où il arrête le workflow. Un paramètre orthogonal (`--front`,
+tableau des modes du `SKILL.md`, une ligne par drapeau, et propose un filtre
+**à choix multiple** — un workflow se tape avec plusieurs drapeaux à la fois,
+`--express --front`. Une étape survit si tous les drapeaux choisis la gardent,
+et le workflow finit au plus tôt des arrêts : le plan grise les étapes sautées,
+liens compris, et marque l'étape où la combinaison s'arrête. Un paramètre orthogonal (`--front`,
 `--full-auto`) se choisit aussi — il se dit alors pour ce qu'il est, sans rien
 griser, plutôt que d'être absent.
 

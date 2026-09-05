@@ -4,7 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 import { FiltreDrapeaux } from "@/components/FiltreDrapeaux";
 import { PlanWorkflow } from "@/components/PlanWorkflow";
 import { reordonner, type Retour } from "./actions";
-import type { Drapeau } from "@/lib/lecture/drapeaux";
+import { combiner, type Drapeau } from "@/lib/lecture/drapeaux";
 import type { Workflow } from "@/lib/lecture/workflow";
 
 const VIERGE: Retour = { etat: "vierge", message: "" };
@@ -31,11 +31,11 @@ export function PlanReordonnable({
   drapeaux: Drapeau[];
 }) {
   const [retour, action, enCours] = useActionState(reordonner, VIERGE);
-  const [choisi, setChoisi] = useState<string | null>(null);
-  const actif = drapeaux.find((d) => d.drapeau === choisi);
-  const sautees = actif?.actives
-    ? new Set(workflow.etapes.map((e) => e.numero).filter((n) => !actif.actives!.includes(n)))
-    : undefined;
+  const [choisis, setChoisis] = useState<string[]>([]);
+  const { sautees, fin } = combiner(
+    drapeaux.filter((d) => choisis.includes(d.drapeau)),
+    workflow.etapes.map((e) => e.numero),
+  );
 
   // Le formulaire est soumis par le code, jamais par un bouton : c'est le
   // relâchement de la souris qui vaut validation.
@@ -47,13 +47,19 @@ export function PlanReordonnable({
     <form action={action} data-plan>
       <input type="hidden" name="skill" value={cheminSkill} />
       {drapeaux.length > 0 && (
-        <FiltreDrapeaux drapeaux={drapeaux} total={workflow.etapes.length} choisi={choisi} onChoisir={setChoisi} />
+        <FiltreDrapeaux
+          drapeaux={drapeaux}
+          choisis={choisis}
+          onBasculer={(d) => setChoisis((c) => (c.includes(d) ? c.filter((x) => x !== d) : [...c, d]))}
+          onVider={() => setChoisis([])}
+          bilan={{ sautees: sautees?.size ?? 0, fin }}
+        />
       )}
       <PlanWorkflow
         workflow={workflow}
         destinations={destinations}
         sautees={sautees}
-        fin={actif?.finAnticipee ?? null}
+        fin={fin}
         surReordre={
           modifiable && !enCours
             ? (ordre) => {

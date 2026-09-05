@@ -3,52 +3,58 @@
 import type { Drapeau } from "@/lib/lecture/drapeaux";
 
 /**
- * Le filtre par drapeau, au-dessus du plan.
+ * Le filtre par drapeaux, au-dessus du plan — à choix multiple.
  *
- * Choisir `--express` grise les étapes que ce mode saute et marque où il
- * s'arrête : le plan montre ce que le drapeau change, pas ce qu'il dit. Un
- * paramètre orthogonal se choisit aussi — il se dit alors pour ce qu'il est,
- * sans rien griser, plutôt que d'être absent et laisser croire qu'il n'existe pas.
+ * Un workflow se tape avec plusieurs drapeaux à la fois : `--express --front`.
+ * Chaque puce se bascule ; « aucun » remet tout à zéro. Le plan grise ce que
+ * la combinaison saute et marque où elle s'arrête ; sous les puces, chaque
+ * drapeau choisi dit ce qu'il change, puis le bilan de l'ensemble.
  */
 export function FiltreDrapeaux({
   drapeaux,
-  total,
-  choisi,
-  onChoisir,
+  choisis,
+  onBasculer,
+  onVider,
+  bilan,
 }: {
   drapeaux: Drapeau[];
-  /** Le nombre d'étapes du tableau, pour compter les sautées. */
-  total: number;
-  choisi: string | null;
-  onChoisir: (drapeau: string | null) => void;
+  choisis: string[];
+  /** Ajoute ou retire un drapeau — le parent tient l'état, deux clics rapprochés ne s'écrasent pas. */
+  onBasculer: (drapeau: string) => void;
+  onVider: () => void;
+  /** Le compte des étapes sautées et la fin, calculés sur la combinaison. */
+  bilan: { sautees: number; fin: string | null };
 }) {
-  const actif = drapeaux.find((d) => d.drapeau === choisi);
-  const sautees = actif?.actives ? total - actif.actives.length : 0;
+  const actifs = drapeaux.filter((d) => choisis.includes(d.drapeau));
 
   return (
     <div className="mb-4">
       <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Drapeaux du workflow">
-        <span className="mr-1 font-mono text-meta text-muted">drapeau</span>
-        <Puce active={choisi === null} onClic={() => onChoisir(null)}>
+        <span className="mr-1 font-mono text-meta text-muted">drapeaux</span>
+        <Puce active={choisis.length === 0} onClic={onVider}>
           aucun
         </Puce>
         {drapeaux.map((d) => (
-          <Puce key={d.drapeau} active={choisi === d.drapeau} onClic={() => onChoisir(d.drapeau)} titre={d.effet}>
+          <Puce key={d.drapeau} active={choisis.includes(d.drapeau)} onClic={() => onBasculer(d.drapeau)} titre={d.effet}>
             {d.drapeau}
           </Puce>
         ))}
       </div>
-      {actif && (
-        <p className="mt-2.5 max-w-[80ch] text-description text-muted">
-          <span className="font-mono text-ink">{actif.mode}</span> — {actif.effet}{" "}
-          <span className="font-mono text-meta">
-            {actif.actives === null
-              ? "· ne change rien à la séquence"
-              : `· ${sautees} étape${sautees > 1 ? "s" : ""} sautée${sautees > 1 ? "s" : ""}${
-                  actif.finAnticipee ? `, fin à l'étape ${actif.finAnticipee}` : ""
-                }`}
-          </span>
-        </p>
+      {actifs.length > 0 && (
+        <ul className="mt-2.5 flex max-w-[80ch] flex-col gap-1 text-description text-muted">
+          {actifs.map((d) => (
+            <li key={d.drapeau}>
+              <span className="font-mono text-ink">{d.mode}</span> — {d.effet}
+              {d.actives === null && <span className="font-mono text-meta"> · ne change rien à la séquence</span>}
+            </li>
+          ))}
+          <li className="font-mono text-meta">
+            {bilan.sautees === 0
+              ? "aucune étape sautée"
+              : `${bilan.sautees} étape${bilan.sautees > 1 ? "s" : ""} sautée${bilan.sautees > 1 ? "s" : ""}`}
+            {bilan.fin ? `, fin à l'étape ${bilan.fin}` : ""}
+          </li>
+        </ul>
       )}
     </div>
   );

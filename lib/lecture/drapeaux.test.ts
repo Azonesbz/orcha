@@ -6,7 +6,7 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { lireDrapeaux } from "./drapeaux.ts";
+import { combiner, lireDrapeaux } from "./drapeaux.ts";
 
 const NUMEROS = ["0", "1", "2", "3", "4", "5", "6", "7", "8"];
 
@@ -132,4 +132,41 @@ test("un chiffre dans une cellule d'effet n'en fait pas une séquence", () => {
   // Assert
   assert.equal(front?.actives, null);
   assert.match(front?.effet ?? "", /étape 2/);
+});
+
+function choisir(...noms: string[]) {
+  return lireDrapeaux(MODES, NUMEROS).filter((d) => noms.includes(d.drapeau));
+}
+
+test("plusieurs drapeaux se combinent : une étape survit si tous la gardent", () => {
+  // Arrange — express garde tout sauf 4 et 6, cadrage garde 0 → 2
+  const effet = combiner(choisir("--express", "--cadrage"), NUMEROS);
+
+  // Assert
+  assert.deepEqual([...effet.sautees ?? []], ["3", "4", "5", "6", "7", "8"]);
+  assert.equal(effet.fin, "2", "la fin la plus tôt l'emporte");
+});
+
+test("un paramètre orthogonal ne change rien à ce qu'un mode saute", () => {
+  // Arrange & Act
+  const seul = combiner(choisir("--express"), NUMEROS);
+  const avec = combiner(choisir("--express", "--front", "--full-auto"), NUMEROS);
+
+  // Assert
+  assert.deepEqual([...avec.sautees ?? []], [...seul.sautees ?? []]);
+  assert.equal(avec.fin, seul.fin);
+});
+
+test("des paramètres orthogonaux seuls ne grisent rien", () => {
+  // Arrange & Act
+  const effet = combiner(choisir("--front", "--full-auto"), NUMEROS);
+
+  // Assert
+  assert.equal(effet.sautees, undefined);
+  assert.equal(effet.fin, null);
+});
+
+test("aucun drapeau choisi : rien", () => {
+  // Arrange & Act & Assert
+  assert.deepEqual(combiner([], NUMEROS), { sautees: undefined, fin: null });
 });

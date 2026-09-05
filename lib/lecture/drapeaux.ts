@@ -113,3 +113,23 @@ function resoudre(valeurs: number[], numeros: string[]): string[] {
 function sansEmphase(texte: string): string {
   return texte.replace(/\*\*|\*|`/g, "").trim();
 }
+
+/**
+ * Plusieurs drapeaux à la fois : une étape survit si tous la gardent, et le
+ * workflow finit au plus tôt des arrêts. Un paramètre orthogonal n'impose
+ * rien. C'est la lecture d'un `--express --front` tel qu'on le tape — et de
+ * deux modes que le SKILL.md dit exclusifs, ce que le plan montre alors sans
+ * trancher à la place de l'utilisateur.
+ */
+export function combiner(
+  choisis: Drapeau[],
+  numeros: string[],
+): { sautees: Set<string> | undefined; fin: string | null } {
+  const contraintes = choisis.filter((d) => d.actives !== null);
+  if (contraintes.length === 0) return { sautees: undefined, fin: null };
+
+  const actives = numeros.filter((n) => contraintes.every((d) => d.actives!.includes(n)));
+  const fins = contraintes.map((d) => d.finAnticipee).filter((f): f is string => f !== null);
+  const fin = fins.length ? fins.reduce((a, b) => (Number(b) < Number(a) ? b : a)) : null;
+  return { sautees: new Set(numeros.filter((n) => !actives.includes(n))), fin };
+}
