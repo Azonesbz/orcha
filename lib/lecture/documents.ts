@@ -19,12 +19,11 @@ import { basename, join } from "node:path";
 import type { Agent, Commande, Portee, Silence } from "../types.ts";
 import { decouper, estDossier, listerDossiers, listerFichiers, lireTexte } from "./fichiers.ts";
 
-/* Ce que dit un agent qui ne déclare ni `tools` ni `model`. Nommé plutôt que
-   recopié : l'éditeur doit pouvoir distinguer « rien de déclaré » d'une vraie
-   liste d'outils, et comparer deux littéraux identiques à distance est
-   exactement ce qui finit par diverger. */
-export const OUTILS_HERITES = "hérités de la session";
-export const MODELE_DE_SESSION = "celui de la session";
+/* Les deux constantes vivent dans `types.ts`, sans import : un composant
+   client doit pouvoir les lire sans emporter `node:fs`. Réexportées ici pour
+   que « rien de déclaré » reste lisible là où les agents sont lus. */
+import { MODELE_DE_SESSION, OUTILS_HERITES } from "../types.ts";
+export { MODELE_DE_SESSION, OUTILS_HERITES };
 
 export function lireAgents(racine: string, portee: Portee, origine: string): Agent[] {
   return lireDossier(racine, "agents", portee, origine).map(({ nom, entete, corps, chemin, silences }) => ({

@@ -23,6 +23,7 @@ const ENTREES: ReadonlyArray<{ href: Route; libelle: string; icone: NomIcone }> 
   { href: "/workflows", libelle: "Workflows", icone: "workflows" },
   { href: "/agents", libelle: "Agents", icone: "agents" },
   { href: "/reglages", libelle: "Réglages", icone: "reglages" },
+  { href: "/codex", libelle: "Codex", icone: "codex" },
   { href: "/veille", libelle: "Veille", icone: "veille" },
 ];
 

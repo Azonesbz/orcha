@@ -35,6 +35,7 @@ const TRACES = {
   externe: "M7 17 17 7M8 7h9v9",
   commande: "m5 17 6-6-6-6M13 19h7",
   numeroter: "M4 6h1v4M4 10h2M6 18H4l2-3H4M11 6h9M11 12h9M11 18h9",
+  codex: "M4 8h13l-3-3M20 16H7l3 3",
 } as const;
 
 export type NomIcone = keyof typeof TRACES | "proposer" | "silence" | "chercher" | "oeil";

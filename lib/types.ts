@@ -33,6 +33,12 @@ export interface Competence extends Base {
   lignes: number;
 }
 
+/* Ce que dit un agent qui ne déclare ni `tools` ni `model`. Nommé plutôt que
+   recopié, et rangé ici parce que ce fichier n'importe rien : un composant
+   client peut le lire sans emporter `node:fs` dans le navigateur. */
+export const OUTILS_HERITES = "hérités de la session";
+export const MODELE_DE_SESSION = "celui de la session";
+
 export interface Agent extends Base {
   description: string;
   outils: string;
