@@ -114,7 +114,10 @@ catalogue. Utile quand on regarde le dossier de quelqu'un d'autre.
 
 Tout ce qui est chargé, avec sa provenance : compétences, agents, commandes,
 hooks, permissions, plugins, fichiers d'instructions. Chaque ligne porte sa
-portée — `~/.claude`, le projet, ou un plugin nommé.
+portée — `~/.claude`, le projet, ou un plugin nommé. Les sous-dossiers de
+`agents/` et de `commands/` sont lus comme Claude Code les lit :
+`agents/giva-flow/investigator.md` est un agent, et `commands/giva/cadrer.md`
+s'invoque en `/giva:cadrer`.
 
 Et surtout ce qui est **présent mais sans effet**, la seule chose qu'aucune
 commande intégrée ne dit :
