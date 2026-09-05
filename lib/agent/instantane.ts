@@ -1,8 +1,8 @@
 /**
  * L'instantané d'un dossier, avant que l'agent n'y écrive.
  *
- * L'agent d'Orcha écrit directement : c'est un choix assumé, mais il retire le
- * garde-fou central du produit — « rien n'est écrit sans Appliquer ». Et
+ * L'agent d'Orcha écrit directement, et il est le seul chemin d'écriture : le
+ * garde-fou n'est donc plus un bouton « Appliquer », c'est cette copie. Et
  * `~/.claude` n'est pas un dépôt git : sans ce filet, une modification ratée est
  * définitive.
  *

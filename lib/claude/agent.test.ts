@@ -10,7 +10,7 @@
 import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 import { argumentsDeLAgent, suivreLAgent, sansPreambule } from "./agent.ts";
-import { enClair, refuserSiSessionMorte } from "./proposition.ts";
+import { enClair, refuserSiSessionMorte } from "./acces.ts";
 import type { Geste } from "./flux.ts";
 
 /** Le générateur vidé, pour l'affirmer d'un bloc. */

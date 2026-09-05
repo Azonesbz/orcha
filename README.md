@@ -100,7 +100,7 @@ son étiquette parce que le pas le plus sombre reste sous 3:1.
 | Page | Ce qu'on y trouve |
 | --- | --- |
 | Vue d'ensemble | le verdict, les dossiers lus, le choix du projet |
-| Compétences | la liste, et le détail modifiable |
+| Compétences | la liste, le détail, et l'agent pour le modifier |
 | Workflows | les compétences qui se déroulent en étapes, et leur plan |
 | Agents | agents et commandes |
 | Réglages | plugins, hooks, permissions, instructions |
@@ -222,14 +222,17 @@ trois arrêts là où sa propre description en annonce deux.
 
 ## Ce que ça modifie
 
-**Les compétences** : description, indice d'argument, corps.
+**Tout fichier** — compétence, agent, commande, étape — se modifie par
+l'agent, depuis le tiroir de discussion : il connaît l'écran d'où on l'appelle,
+écrit directement, et montre chaque geste au fil de l'eau. Il y avait un
+panneau « Modifier avec Claude » à côté de chaque fichier, qui proposait un
+corps entier à appliquer ; l'agent l'a remplacé.
 
 **Les commandes**, depuis la page Agents et l'écran d'une commande :
 
 | Geste | Ce qui est écrit |
 | --- | --- |
 | Créer une commande | `commands/<nom>.md`, portée utilisateur ou projet |
-| Modifier le corps | ce qui suit le frontmatter, jamais l'en-tête |
 | Retirer une commande | le fichier quitte `commands/` pour `retirees/` — **rien n'est effacé** |
 
 Une commande sans description est refusée : c'est elle qui la présente dans
@@ -323,8 +326,10 @@ plugin** — clone de dépôt, écrasé au prochain `claude plugin update` — e
 
 ## La règle qui gouverne tout le code
 
-**Ne jamais re-sérialiser le YAML.** Le frontmatter est réécrit ligne à ligne :
-seules les clés modifiées bougent, le reste ressort octet pour octet.
+**Ne jamais re-sérialiser le YAML.** La lecture ne re-sérialise rien, l'agent
+a la règle dans sa doctrine — modifier les lignes visées, laisser les autres
+identiques — et les créations écrivent un fichier neuf plutôt que de
+reconstruire un en-tête.
 
 La raison est concrète. `~/.claude/skills/halo/SKILL.md` contient
 `argument-hint: [step] <demande en langage naturel>`, que YAML strict refuse —
@@ -364,8 +369,8 @@ npm test && npm run test:hook
 ```
 
 Soixante-dix-neuf tests TypeScript, huit Python. Les cas les plus utiles sont des
-régressions payées : la ligne de `halo` qui doit ressortir intacte après
-modification d'une autre ligne, et le refus d'écrire dans un plugin.
+régressions payées : `halo` qui doit rester lisible malgré la ligne que YAML
+refuse, le refus d'écrire dans un plugin, et le retrait qui n'efface jamais.
 
 ## Structure
 
@@ -374,7 +379,7 @@ modification d'une autre ligne, et le refus d'écrire dans un plugin.
 | `lib/lecture/` | Lire le disque : `fichiers`, `competences`, `documents`, `reglages`, `plugins`, `workflow`, `projets`, `choix`, `veille`, `atelier` |
 | `lib/plan.ts` | La mise en plan d'un workflow : positions déterministes |
 | `lib/ecriture/` | Écrire sans casser : `garde` (les refus partagés), `empreinte` (le lien montré/écrit), `frontmatter`, `competence`, `etape`, `agent`, `renumerotation` |
-| `app/` | L'interface : liste, détail modifiable, plan de workflow |
+| `app/` | L'interface : liste, détail, plan de workflow, agent |
 | `hook.py`, `ecart.py`, `lecture.py`, `message.py` | Le hook de veille, indépendant du web |
 
 ## Limites
@@ -383,8 +388,9 @@ modification d'une autre ligne, et le refus d'écrire dans un plugin.
   de réglages administrés est délivrée à distance à la connexion, à quoi
   s'ajoutent les arguments CLI, l'environnement et `--settings`. L'outil dit
   « voici un écart certain », jamais « voici tout ».
-- **Seules les compétences sont modifiables.** Agents, commandes, hooks et
-  permissions sont en lecture seule pour l'instant.
+- **Hooks et permissions ne se modifient pas depuis l'interface.** L'agent peut
+  toucher aux fichiers de réglages si on le lui demande, mais aucun écran ne
+  les édite : un `settings.json` mal formé invalide tout, et ça se relit.
 - **La précédence n'est pas calculée.** Quand deux éléments de même nom
   existent dans deux portées, l'un éclipse l'autre en silence. C'est le plus
   gros écart encore non détecté, et le prochain à écrire.

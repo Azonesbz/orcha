@@ -22,7 +22,7 @@ import type { Modele } from "../reglages/modeles.ts";
 import { lancerEnFlux } from "./lancement.ts";
 import { DOCTRINE } from "./doctrine.ts";
 import { lireGestes, type Geste } from "./flux.ts";
-import { cliDisponible, enClair } from "./proposition.ts";
+import { cliDisponible, enClair } from "./acces.ts";
 
 /** Lire et chercher, sans rien changer. Le cas d'un plugin, ou d'un écran de lecture. */
 const LECTURE = "Read,Glob,Grep";

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { ecritureOuverte } from "@/lib/acces/etat";
-import { verifierCle } from "@/lib/claude/proposition";
+import { verifierCle } from "@/lib/claude/acces";
 import { ecrireConfig, lireConfig } from "@/lib/reglages/config";
 import { estModele, type Modele } from "@/lib/reglages/modeles";
 

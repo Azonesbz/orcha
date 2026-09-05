@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
-import { creerCommande, enregistrerCommande, retirerCommande } from "./commande.ts";
+import { creerCommande, retirerCommande } from "./commande.ts";
 
 function racineJetable(): string {
   const racine = mkdtempSync(join(tmpdir(), "commande-"));
@@ -82,36 +82,6 @@ test("créer deux fois la même commande est refusé, sans écraser", () => {
   assert.ok(readFileSync(premier, "utf8").includes("La vraie."));
 });
 
-test("réécrire le corps d'une commande laisse son frontmatter intact, ligne pour ligne", () => {
-  // Arrange — `argument-hint: [fichier] <quoi>` est précisément ce que YAML strict refuse
-  const racine = racineJetable();
-  const chemin = poser(racine, "relire");
-
-  // Act
-  enregistrerCommande(chemin, { corps: "Nouveau corps.\n" });
-
-  // Assert
-  const contenu = readFileSync(chemin, "utf8");
-  assert.ok(contenu.includes("argument-hint: [fichier] <quoi>"), "le frontmatter ne bouge pas");
-  assert.ok(contenu.includes("Nouveau corps."));
-  assert.ok(!contenu.includes("Ancien corps."));
-});
-
-test("un fichier qui n'est pas une commande est refusé avant toute écriture", () => {
-  // Arrange
-  const racine = racineJetable();
-  const chemin = join(racine, "agents", "relecteur.md");
-  mkdirSync(join(racine, "agents"), { recursive: true });
-  writeFileSync(chemin, ["---", "name: relecteur", "---", "", "Corps.", ""].join("\n"), "utf8");
-
-  // Act
-  const geste = () => enregistrerCommande(chemin, { corps: "Autre chose." });
-
-  // Assert
-  assert.throws(geste, /commands/);
-  assert.ok(readFileSync(chemin, "utf8").includes("Corps."), "rien n'a été écrit");
-});
-
 test("retirer déplace la commande hors de commands/ au lieu de l'effacer", () => {
   // Arrange
   const racine = racineJetable();
@@ -140,7 +110,7 @@ test("retirer deux fois la même commande ne recouvre pas la première", () => {
   assert.ok(readFileSync(destination, "utf8").includes("La première."));
 });
 
-test("une commande fournie par un plugin est refusée, en écriture comme en retrait", () => {
+test("une commande fournie par un plugin est refusée au retrait", () => {
   // Arrange — un plugin est un clone de dépôt : toute modification y serait
   // écrasée au prochain « claude plugin update », sans un mot.
   const racine = racineJetable();
@@ -149,7 +119,6 @@ test("une commande fournie par un plugin est refusée, en écriture comme en ret
   writeFileSync(chemin, ["---", "description: Pipeline.", "---", "", "Corps du plugin.", ""].join("\n"), "utf8");
 
   // Act & Assert
-  assert.throws(() => enregistrerCommande(chemin, { corps: "Autre chose." }), /plugin/i);
   assert.throws(() => retirerCommande(chemin), /plugin/i);
   assert.ok(readFileSync(chemin, "utf8").includes("Corps du plugin."), "rien n'a bougé");
 });

@@ -1,18 +1,13 @@
 import { notFound } from "next/navigation";
-import { agir } from "./actions";
-import { Editeur } from "@/components/editeur/Editeur";
-import { ModuleExecution } from "@/components/editeur/ModuleExecution";
-import { ModuleIdentite } from "@/components/editeur/ModuleIdentite";
+import { Lecteur } from "@/components/lecteur/Lecteur";
+import { ModuleExecution } from "@/components/lecteur/ModuleExecution";
+import { ModuleIdentite } from "@/components/lecteur/ModuleIdentite";
 import { EnteteFichier, RetourListe } from "@/components/EnteteFichier";
 import { retourDepuis } from "@/lib/chrome/retour";
 import { Silences } from "@/components/primitives";
-import { ecritureOuverte } from "@/lib/acces/etat";
-import { verifierCheminAgent } from "@/lib/ecriture/agent";
 import { lireAtelier } from "@/lib/lecture/atelier";
 import { MODELE_DE_SESSION, OUTILS_HERITES } from "@/lib/lecture/documents";
 import { lireTexte } from "@/lib/lecture/fichiers";
-import { cliDisponible } from "@/lib/claude/proposition";
-import { lireConfig } from "@/lib/reglages/config";
 
 export const dynamic = "force-dynamic";
 
@@ -29,10 +24,6 @@ export default async function Detail({
   const agent = lireAtelier().agents.find((a) => a.chemin === cible);
   if (!agent) notFound();
 
-  const refus = (await ecritureOuverte())
-    ? raisonDuRefus(cible)
-    : "L'écriture est fermée sur ce déploiement. La lecture reste entière.";
-  const config = lireConfig();
   const modules = 2 + (agent.corps.match(/^##\s+/gm)?.length ?? 0);
 
   return (
@@ -43,11 +34,6 @@ export default async function Detail({
         nom={agent.nom}
         portee={agent.portee}
         origine={agent.origine}
-        action={
-          <span className="font-mono text-meta text-muted">
-            lecture seule — toute écriture passe par Claude
-          </span>
-        }
       >
         <p className="mt-2 font-mono text-meta-lg text-muted">
           {agent.chemin} · {modules} modules
@@ -56,15 +42,12 @@ export default async function Detail({
 
       <Silences silences={agent.silences} />
 
-      <Editeur
+      <Lecteur
         fichier={{
-          chemin: agent.chemin,
-          nom: agent.nom,
           corps: agent.corps,
           entete: entete(agent.chemin, agent.corps),
           nomFichier: nomDuFichier(agent.chemin),
         }}
-        action={agir}
         modulesFixes={
           <>
             <ModuleIdentite icone="agents" description={agent.description} />
@@ -75,9 +58,6 @@ export default async function Detail({
             />
           </>
         }
-        modele={config.modele}
-        cleConfiguree={config.cleApi !== "" || cliDisponible()}
-        refus={refus}
       />
     </main>
   );
@@ -111,14 +91,4 @@ function entete(chemin: string, corps: string): string {
 
 function nomDuFichier(chemin: string): string {
   return chemin.slice(chemin.lastIndexOf("/") + 1);
-}
-
-/** Chaîne vide si le fichier est modifiable, sinon la raison, en clair. */
-function raisonDuRefus(chemin: string): string {
-  try {
-    verifierCheminAgent(chemin);
-    return "";
-  } catch (erreur) {
-    return erreur instanceof Error ? erreur.message : "Non modifiable.";
-  }
 }

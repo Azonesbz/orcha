@@ -1,17 +1,12 @@
 import type { Route } from "next";
 import { notFound } from "next/navigation";
-import { agir } from "./actions";
-import { Editeur } from "@/components/editeur/Editeur";
+import { Lecteur } from "@/components/lecteur/Lecteur";
 import { EnteteFichier, RetourListe } from "@/components/EnteteFichier";
 import { Silences } from "@/components/primitives";
 import { retourDepuis } from "@/lib/chrome/retour";
-import { ecritureOuverte } from "@/lib/acces/etat";
-import { verifierCheminEtape } from "@/lib/ecriture/etape";
 import { lireAtelier } from "@/lib/lecture/atelier";
 import { lireTexte } from "@/lib/lecture/fichiers";
 import { lireWorkflow } from "@/lib/lecture/workflow";
-import { cliDisponible } from "@/lib/claude/proposition";
-import { lireConfig } from "@/lib/reglages/config";
 import type { Competence } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -33,10 +28,6 @@ export default async function Etape({
   const proprietaire = competenceProprietaire(atelier.competences, cible);
   if (!proprietaire) notFound();
 
-  const config = lireConfig();
-  const refus = (await ecritureOuverte())
-    ? raisonDuRefus(cible)
-    : "L'écriture est fermée sur ce déploiement. La lecture reste entière.";
   const laquelle = etapeDans(atelier, proprietaire, cible);
 
   return (
@@ -52,11 +43,6 @@ export default async function Etape({
         nom={nomDuFichier(cible)}
         portee={proprietaire.portee}
         origine={proprietaire.origine}
-        action={
-          <span className="font-mono text-meta text-muted">
-            lecture seule — toute écriture passe par Claude
-          </span>
-        }
       >
         <p className="mt-2.5 text-intro text-muted">
           {laquelle ? `Étape ${laquelle.numero} de ${proprietaire.nom} — ${laquelle.role}` : `Fichier de ${proprietaire.nom}`}
@@ -66,20 +52,10 @@ export default async function Etape({
 
       {laquelle && <Silences silences={laquelle.silences} />}
 
-      <Editeur
-        fichier={{
-          chemin: cible,
-          nom: nomDuFichier(cible),
-          corps: contenu,
-          // Une étape n'a pas de frontmatter : le corps EST le fichier.
-          entete: "",
-          nomFichier: nomDuFichier(cible),
-        }}
-        action={agir}
+      <Lecteur
+        // Une étape n'a pas de frontmatter : le corps EST le fichier.
+        fichier={{ corps: contenu, entete: "", nomFichier: nomDuFichier(cible) }}
         modulesFixes={null}
-        modele={config.modele}
-        cleConfiguree={config.cleApi !== "" || cliDisponible()}
-        refus={refus}
       />
     </main>
   );
@@ -111,13 +87,4 @@ function dossierDe(chemin: string): string {
 
 function nomDuFichier(chemin: string): string {
   return chemin.slice(chemin.lastIndexOf("/") + 1);
-}
-
-function raisonDuRefus(chemin: string): string {
-  try {
-    verifierCheminEtape(chemin);
-    return "";
-  } catch (erreur) {
-    return erreur instanceof Error ? erreur.message : "Non modifiable.";
-  }
 }

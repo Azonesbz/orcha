@@ -1,8 +1,7 @@
 import { notFound } from "next/navigation";
-import { agir } from "./actions";
 import { Retrait } from "./Retrait";
-import { Editeur } from "@/components/editeur/Editeur";
-import { ModuleIdentite } from "@/components/editeur/ModuleIdentite";
+import { Lecteur } from "@/components/lecteur/Lecteur";
+import { ModuleIdentite } from "@/components/lecteur/ModuleIdentite";
 import { EnteteFichier, RetourListe } from "@/components/EnteteFichier";
 import { retourDepuis } from "@/lib/chrome/retour";
 import { Silences } from "@/components/primitives";
@@ -10,8 +9,6 @@ import { ecritureOuverte } from "@/lib/acces/etat";
 import { verifierCheminCommande } from "@/lib/ecriture/commande";
 import { lireAtelier } from "@/lib/lecture/atelier";
 import { lireTexte } from "@/lib/lecture/fichiers";
-import { cliDisponible } from "@/lib/claude/proposition";
-import { lireConfig } from "@/lib/reglages/config";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +28,6 @@ export default async function Detail({
   const refus = (await ecritureOuverte())
     ? raisonDuRefus(cible)
     : "L'écriture est fermée sur ce déploiement. La lecture reste entière.";
-  const config = lireConfig();
   const modules = 1 + (commande.corps.match(/^##\s+/gm)?.length ?? 0);
 
   return (
@@ -57,15 +53,12 @@ export default async function Detail({
 
       <Silences silences={commande.silences} />
 
-      <Editeur
+      <Lecteur
         fichier={{
-          chemin: commande.chemin,
-          nom: commande.nom,
           corps: commande.corps,
           entete: entete(commande.chemin, commande.corps),
           nomFichier: nomDuFichier(commande.chemin),
         }}
-        action={agir}
         modulesFixes={
           <ModuleIdentite
             icone="commande"
@@ -73,9 +66,6 @@ export default async function Detail({
             indiceArgument={commande.indiceArgument}
           />
         }
-        modele={config.modele}
-        cleConfiguree={config.cleApi !== "" || cliDisponible()}
-        refus={refus}
       />
     </main>
   );

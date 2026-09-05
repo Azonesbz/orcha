@@ -9,8 +9,6 @@
 
 import { mkdirSync, renameSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
-import { lireTexte } from "../lecture/fichiers.ts";
-import { remplacerCorps } from "./frontmatter.ts";
 import {
   cheminModifiable,
   doitEtreLibre,
@@ -65,20 +63,6 @@ function fichierCommande(description: string, indice: string): string {
     "$ARGUMENTS",
     "",
   ].join("\n");
-}
-
-/**
- * Réécrit le corps d'une commande, sans toucher au frontmatter.
- *
- * Comme pour un agent : la description et l'indice d'argument vivent dans
- * l'en-tête, et le réécrire depuis la structure analysée détruirait les lignes
- * que YAML strict refuse — `argument-hint: [fichier] <quoi>` en est une.
- */
-export function enregistrerCommande(chemin: string, modification: { corps: string }): void {
-  const absolu = verifierCheminCommande(chemin);
-  const brut = lireTexte(absolu);
-  if (brut === null) throw new EcritureRefusee("Fichier introuvable ou illisible.");
-  ecrireAtomiquement(absolu, remplacerCorps(brut, modification.corps));
 }
 
 /** Le garde partagé, plus la seule règle propre aux commandes. */
